@@ -16,14 +16,17 @@ func init() {
 var sensorTypes = map[byte]string{
 	0: "No external sensor",
 	1: "Temperature Sensor",
-	4: "Interrupt Sensor send",
+	4: "Interrupt/Door Sensor send",
 	5: "Illumination Sensor",
 	6: "ADC Sensor",
 	7: "Interrupt Sensor count",
 }
 
+var batLevels = [4]string{"Ultra Low", "Low", "OK", "Good"}
+
 // Data is the decoded LHT65 uplink.
 type Data struct {
+	BatLevel               string   `json:"bat_level"`
 	SensorType             string   `json:"sensor_type"`
 	BatteryVoltage         float64  `json:"battery_voltage"`
 	Temperature            float64  `json:"temperature"`
@@ -58,9 +61,11 @@ func Decode(u decoders.Uplink) (any, error) {
 		name = "Unknown sensor type"
 	}
 
+	batteryRaw := uint16(b[0])<<8 | uint16(b[1])
 	d := &Data{
+		BatLevel:       batLevels[batteryRaw>>14],
 		SensorType:     name,
-		BatteryVoltage: float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		BatteryVoltage: float64(batteryRaw&0x3FFF) / 1000,
 		Temperature:    round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/100, 2),
 		Humidity:       round(float64(uint16(b[4])<<8|uint16(b[5]))/10, 1),
 	}
