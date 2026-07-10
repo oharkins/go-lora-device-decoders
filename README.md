@@ -5,17 +5,15 @@ Go library of LoRaWAN payload decoders, keyed by **manufacturer / product / vers
 ## Install
 
 ```
-go get github.com/odis/lorawan-decoders
+go get github.com/oharkins/go-lora-device-decoders
 ```
-
-> Rename the module path in `go.mod` to your actual repo before pushing.
 
 ## Usage
 
 ```go
 import (
-    decoders "github.com/odis/lorawan-decoders"
-    _ "github.com/odis/lorawan-decoders/all" // register all decoders
+    decoders "github.com/oharkins/go-lora-device-decoders"
+    _ "github.com/oharkins/go-lora-device-decoders/all" // register all decoders
 )
 
 func handle(payload []byte) error {
@@ -35,7 +33,7 @@ func handle(payload []byte) error {
 Import a single decoder instead of `all` to keep binaries lean:
 
 ```go
-import _ "github.com/odis/lorawan-decoders/dragino/lht65v1"
+import _ "github.com/oharkins/go-lora-device-decoders/dragino/lht65v1"
 ```
 
 Dynamic lookup (e.g. device type from a DynamoDB device registry record):

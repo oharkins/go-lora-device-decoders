@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"math"
 
-	decoders "github.com/odis/lorawan-decoders"
+	decoders "github.com/oharkins/go-lora-device-decoders"
 )
 
 func init() {

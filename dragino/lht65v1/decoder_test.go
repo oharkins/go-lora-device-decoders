@@ -3,8 +3,8 @@ package lht65v1_test
 import (
 	"testing"
 
-	decoders "github.com/odis/lorawan-decoders"
-	"github.com/odis/lorawan-decoders/dragino/lht65v1"
+	decoders "github.com/oharkins/go-lora-device-decoders"
+	"github.com/oharkins/go-lora-device-decoders/dragino/lht65v1"
 )
 
 func TestDecodeBuiltIn(t *testing.T) {
