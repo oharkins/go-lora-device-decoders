@@ -10,7 +10,7 @@ import (
 func init() {
 	decoders.Register("dragino", "lwl01", "v1", decoders.New(
 		Decode,
-		decoders.Offer("bat_v", "V"),
+		decoders.Offer("battery_voltage", "V"),
 		decoders.Offer("mod", ""),
 		decoders.Offer("door_open_status", ""),
 		decoders.Offer("water_leak_status", ""),
@@ -36,7 +36,7 @@ type Data struct {
 
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("battery_voltage", "V", d.BatV),
 		decoders.Int("mod", "", d.Mod),
 	}
 	ms = decoders.AppendInt(ms, "door_open_status", "", d.DoorOpenStatus)

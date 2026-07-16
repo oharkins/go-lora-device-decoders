@@ -14,7 +14,7 @@ import (
 func init() {
 	decoders.Register("dragino", "lbt1", "v1", decoders.New(
 		Decode,
-		decoders.Offer("bat_v", "V"),
+		decoders.Offer("battery_voltage", "V"),
 		decoders.Offer("major", ""),
 		decoders.Offer("minor", ""),
 		decoders.Offer("rssi", "dBm"),
@@ -41,7 +41,7 @@ type Data struct {
 
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("battery_voltage", "V", d.BatV),
 		decoders.Int("major", "", d.Major),
 		decoders.Int("minor", "", d.Minor),
 		decoders.Int("step_count", "count", d.StepCount),

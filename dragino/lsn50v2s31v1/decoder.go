@@ -11,7 +11,7 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lsn50v2-s31", "v1", decoders.New(Decode,
-		decoders.Offer("bat_v", "V"),
+		decoders.Offer("battery_voltage", "V"),
 		decoders.Offer("temp_c1", "C"),
 		decoders.Offer("adc_ch0v", "V"),
 		decoders.Offer("adc_ch1v", "V"),
@@ -63,7 +63,7 @@ type Data struct {
 
 func (d *Data) Measurements() []decoders.Measurement {
 	measurements := []decoders.Measurement{
-		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("battery_voltage", "V", d.BatV),
 	}
 	measurements = decoders.AppendFloat(measurements, "temp_c1", "C", d.TempC1)
 	measurements = decoders.AppendFloat(measurements, "adc_ch0v", "V", d.ADCCH0V)

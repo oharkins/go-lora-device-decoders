@@ -9,7 +9,7 @@ import (
 
 func init() {
 	decoders.Register("dragino", "ldds04", "v1", decoders.New(Decode,
-		decoders.Offer("bat_v", "V"),
+		decoders.Offer("battery_voltage", "V"),
 		decoders.Offer("distance1_cm", "cm"),
 		decoders.Offer("distance2_cm", "cm"),
 		decoders.Offer("distance3_cm", "cm"),
@@ -30,7 +30,7 @@ type Data struct {
 
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("battery_voltage", "V", d.BatV),
 		decoders.Float("distance1_cm", "cm", d.Distance1CM),
 		decoders.Float("distance2_cm", "cm", d.Distance2CM),
 		decoders.Float("distance3_cm", "cm", d.Distance3CM),

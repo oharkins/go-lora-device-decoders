@@ -10,7 +10,7 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lsnpk01", "v1", decoders.New(Decode,
-		decoders.Offer("bat_v", "V"),
+		decoders.Offer("battery_voltage", "V"),
 		decoders.Offer("temp_c_ds18b20", "C"),
 		decoders.Offer("n_soil", "mg/kg"),
 		decoders.Offer("p_soil", "mg/kg"),
@@ -32,7 +32,7 @@ type Data struct {
 
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("battery_voltage", "V", d.BatV),
 		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
 		decoders.Int("n_soil", "mg/kg", d.NSoil),
 		decoders.Int("p_soil", "mg/kg", d.PSoil),
