@@ -11,11 +11,11 @@ import (
 func init() {
 	decoders.Register("dragino", "ltc2", "v1", decoders.New(
 		Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temp_channel1", "C"),
-		decoders.Offer("temp_channel2", "C"),
-		decoders.Offer("res_channel1", "ohm"),
-		decoders.Offer("res_channel2", "ohm"),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TempChannel1, decoders.Celsius),
+		decoders.Offer(decoders.TempChannel2, decoders.Celsius),
+		decoders.Offer(decoders.Resistance1, decoders.Ohm),
+		decoders.Offer(decoders.Resistance2, decoders.Ohm),
 	))
 }
 
@@ -29,14 +29,16 @@ type Data struct {
 	SysTimestamp int64    `json:"sys_timestamp"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
 	}
-	ms = decoders.AppendFloat(ms, "temp_channel1", "C", d.TempChannel1)
-	ms = decoders.AppendFloat(ms, "temp_channel2", "C", d.TempChannel2)
-	ms = decoders.AppendFloat(ms, "res_channel1", "ohm", d.ResChannel1)
-	ms = decoders.AppendFloat(ms, "res_channel2", "ohm", d.ResChannel2)
+	ms = decoders.AppendFloat(ms, decoders.TempChannel1, decoders.Celsius, d.TempChannel1)
+	ms = decoders.AppendFloat(ms, decoders.TempChannel2, decoders.Celsius, d.TempChannel2)
+	ms = decoders.AppendFloat(ms, decoders.Resistance1, decoders.Ohm, d.ResChannel1)
+	ms = decoders.AppendFloat(ms, decoders.Resistance2, decoders.Ohm, d.ResChannel2)
 	return ms
 }
 

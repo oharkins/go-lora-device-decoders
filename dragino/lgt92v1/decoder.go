@@ -10,13 +10,13 @@ import (
 func init() {
 	decoders.Register("dragino", "lgt92", "v1", decoders.New(
 		Decode,
-		decoders.Offer("lat", "deg"),
-		decoders.Offer("lon", "deg"),
-		decoders.Offer("altitude", "m"),
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("roll", "deg"),
-		decoders.Offer("pitch", "deg"),
-		decoders.Offer("hdop", ""),
+		decoders.Offer(decoders.Latitude, decoders.Degree),
+		decoders.Offer(decoders.Longitude, decoders.Degree),
+		decoders.Offer(decoders.Altitude, decoders.Meter),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Roll, decoders.Degree),
+		decoders.Offer(decoders.Pitch, decoders.Degree),
+		decoders.Offer(decoders.HDOP, ""),
 	))
 }
 
@@ -35,15 +35,17 @@ type Data struct {
 	HDOP        float64 `json:"hdop"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("lat", "deg", d.Latitude),
-		decoders.Float("lon", "deg", d.Longitude),
-		decoders.Float("altitude", "m", d.Altitude),
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Float("roll", "deg", d.Roll),
-		decoders.Float("pitch", "deg", d.Pitch),
-		decoders.Float("hdop", "", d.HDOP),
+		decoders.Float(decoders.Latitude, decoders.Degree, d.Latitude),
+		decoders.Float(decoders.Longitude, decoders.Degree, d.Longitude),
+		decoders.Float(decoders.Altitude, decoders.Meter, d.Altitude),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.Roll, decoders.Degree, d.Roll),
+		decoders.Float(decoders.Pitch, decoders.Degree, d.Pitch),
+		decoders.Float(decoders.HDOP, "", d.HDOP),
 	}
 }
 

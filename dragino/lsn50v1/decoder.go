@@ -10,17 +10,17 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lsn50", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temp_c1", "C"),
-		decoders.Offer("adc_ch0v", "V"),
-		decoders.Offer("adc_ch1v", "V"),
-		decoders.Offer("adc_ch4v", "V"),
-		decoders.Offer("temp_c_sht", "C"),
-		decoders.Offer("hum_sht", "%"),
-		decoders.Offer("distance", "cm"),
-		decoders.Offer("temp_c2", "C"),
-		decoders.Offer("temp_c3", "C"),
-		decoders.Offer("weight", "g"),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TemperatureProbe, decoders.Celsius),
+		decoders.Offer(decoders.ADCCH0Voltage, decoders.Volt),
+		decoders.Offer(decoders.ADCCH1Voltage, decoders.Volt),
+		decoders.Offer(decoders.ADCCH4Voltage, decoders.Volt),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+		decoders.Offer(decoders.DistanceCM, decoders.Centimeter),
+		decoders.Offer(decoders.Temperature2, decoders.Celsius),
+		decoders.Offer(decoders.Temperature3, decoders.Celsius),
+		decoders.Offer(decoders.Weight, decoders.Gram),
 	))
 }
 
@@ -42,20 +42,22 @@ type Data struct {
 	Weight         *int     `json:"weight,omitempty"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	measurements := []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
 	}
-	measurements = decoders.AppendFloat(measurements, "temp_c1", "C", d.TempC1)
-	measurements = decoders.AppendFloat(measurements, "adc_ch0v", "V", d.ADCCH0V)
-	measurements = decoders.AppendFloat(measurements, "adc_ch1v", "V", d.ADCCH1V)
-	measurements = decoders.AppendFloat(measurements, "adc_ch4v", "V", d.ADCCH4V)
-	measurements = decoders.AppendFloat(measurements, "temp_c_sht", "C", d.TempCSHT)
-	measurements = decoders.AppendFloat(measurements, "hum_sht", "%", d.HumSHT)
-	measurements = decoders.AppendFloat(measurements, "distance", "cm", d.Distance)
-	measurements = decoders.AppendFloat(measurements, "temp_c2", "C", d.TempC2)
-	measurements = decoders.AppendFloat(measurements, "temp_c3", "C", d.TempC3)
-	measurements = decoders.AppendInt(measurements, "weight", "g", d.Weight)
+	measurements = decoders.AppendFloat(measurements, decoders.TemperatureProbe, decoders.Celsius, d.TempC1)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH0Voltage, decoders.Volt, d.ADCCH0V)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH1Voltage, decoders.Volt, d.ADCCH1V)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH4Voltage, decoders.Volt, d.ADCCH4V)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature, decoders.Celsius, d.TempCSHT)
+	measurements = decoders.AppendFloat(measurements, decoders.Humidity, decoders.Percent, d.HumSHT)
+	measurements = decoders.AppendFloat(measurements, decoders.DistanceCM, decoders.Centimeter, d.Distance)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature2, decoders.Celsius, d.TempC2)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature3, decoders.Celsius, d.TempC3)
+	measurements = decoders.AppendInt(measurements, decoders.Weight, decoders.Gram, d.Weight)
 	return measurements
 }
 

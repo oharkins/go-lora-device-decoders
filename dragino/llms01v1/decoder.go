@@ -10,12 +10,12 @@ import (
 
 func init() {
 	decoders.Register("dragino", "llms01", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temp_c_ds18b20", "C"),
-		decoders.Offer("leaf_moisture", "%"),
-		decoders.Offer("leaf_temp", "C"),
-		decoders.Offer("interrupt_flag", ""),
-		decoders.Offer("message_type", ""),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.DSTemperature, decoders.Celsius),
+		decoders.Offer(decoders.LeafMoisture, decoders.Percent),
+		decoders.Offer(decoders.LeafTemp, decoders.Celsius),
+		decoders.Offer(decoders.InterruptFlag, ""),
+		decoders.Offer(decoders.MessageType, ""),
 	))
 }
 
@@ -28,14 +28,16 @@ type Data struct {
 	MessageType   int     `json:"message_type"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
-		decoders.Float("leaf_moisture", "%", d.LeafMoisture),
-		decoders.Float("leaf_temp", "C", d.LeafTemp),
-		decoders.Int("interrupt_flag", "", d.InterruptFlag),
-		decoders.Int("message_type", "", d.MessageType),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.DSTemperature, decoders.Celsius, d.TempCDS18B20),
+		decoders.Float(decoders.LeafMoisture, decoders.Percent, d.LeafMoisture),
+		decoders.Float(decoders.LeafTemp, decoders.Celsius, d.LeafTemp),
+		decoders.Int(decoders.InterruptFlag, "", d.InterruptFlag),
+		decoders.Int(decoders.MessageType, "", d.MessageType),
 	}
 }
 

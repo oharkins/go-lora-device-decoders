@@ -11,16 +11,16 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lsn50v2-d20-d22-d23", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temp_red", "C"),
-		decoders.Offer("temp_white", "C"),
-		decoders.Offer("temp_black", "C"),
-		decoders.Offer("temp_red_min", "C"),
-		decoders.Offer("temp_red_max", "C"),
-		decoders.Offer("temp_white_min", "C"),
-		decoders.Offer("temp_white_max", "C"),
-		decoders.Offer("temp_black_min", "C"),
-		decoders.Offer("temp_black_max", "C"),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TempRed, decoders.Celsius),
+		decoders.Offer(decoders.TempWhite, decoders.Celsius),
+		decoders.Offer(decoders.TempBlack, decoders.Celsius),
+		decoders.Offer(decoders.TempRedMin, decoders.Celsius),
+		decoders.Offer(decoders.TempRedMax, decoders.Celsius),
+		decoders.Offer(decoders.TempWhiteMin, decoders.Celsius),
+		decoders.Offer(decoders.TempWhiteMax, decoders.Celsius),
+		decoders.Offer(decoders.TempBlackMin, decoders.Celsius),
+		decoders.Offer(decoders.TempBlackMax, decoders.Celsius),
 	))
 }
 
@@ -39,29 +39,31 @@ type Data struct {
 	TempBlackMax *int8    `json:"temp_black_max,omitempty"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	var measurements []decoders.Measurement
-	measurements = decoders.AppendFloat(measurements, "battery_voltage", "V", d.BatV)
-	measurements = appendAnyFloat(measurements, "temp_red", "C", d.TempRed)
-	measurements = appendAnyFloat(measurements, "temp_white", "C", d.TempWhite)
-	measurements = appendAnyFloat(measurements, "temp_black", "C", d.TempBlack)
+	measurements = decoders.AppendFloat(measurements, decoders.BatteryVoltage, decoders.Volt, d.BatV)
+	measurements = appendAnyFloat(measurements, decoders.TempRed, decoders.Celsius, d.TempRed)
+	measurements = appendAnyFloat(measurements, decoders.TempWhite, decoders.Celsius, d.TempWhite)
+	measurements = appendAnyFloat(measurements, decoders.TempBlack, decoders.Celsius, d.TempBlack)
 	if d.TempRedMin != nil {
-		measurements = append(measurements, decoders.Int("temp_red_min", "C", int(*d.TempRedMin)))
+		measurements = append(measurements, decoders.Int(decoders.TempRedMin, decoders.Celsius, int(*d.TempRedMin)))
 	}
 	if d.TempRedMax != nil {
-		measurements = append(measurements, decoders.Int("temp_red_max", "C", int(*d.TempRedMax)))
+		measurements = append(measurements, decoders.Int(decoders.TempRedMax, decoders.Celsius, int(*d.TempRedMax)))
 	}
 	if d.TempWhiteMin != nil {
-		measurements = append(measurements, decoders.Int("temp_white_min", "C", int(*d.TempWhiteMin)))
+		measurements = append(measurements, decoders.Int(decoders.TempWhiteMin, decoders.Celsius, int(*d.TempWhiteMin)))
 	}
 	if d.TempWhiteMax != nil {
-		measurements = append(measurements, decoders.Int("temp_white_max", "C", int(*d.TempWhiteMax)))
+		measurements = append(measurements, decoders.Int(decoders.TempWhiteMax, decoders.Celsius, int(*d.TempWhiteMax)))
 	}
 	if d.TempBlackMin != nil {
-		measurements = append(measurements, decoders.Int("temp_black_min", "C", int(*d.TempBlackMin)))
+		measurements = append(measurements, decoders.Int(decoders.TempBlackMin, decoders.Celsius, int(*d.TempBlackMin)))
 	}
 	if d.TempBlackMax != nil {
-		measurements = append(measurements, decoders.Int("temp_black_max", "C", int(*d.TempBlackMax)))
+		measurements = append(measurements, decoders.Int(decoders.TempBlackMax, decoders.Celsius, int(*d.TempBlackMax)))
 	}
 	return measurements
 }

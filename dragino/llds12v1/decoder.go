@@ -10,13 +10,13 @@ import (
 
 func init() {
 	decoders.Register("dragino", "llds12", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temp_c_ds18b20", "C"),
-		decoders.Offer("lidar_distance_cm", "cm"),
-		decoders.Offer("lidar_signal_strength", ""),
-		decoders.Offer("lidar_temp", "C"),
-		decoders.Offer("interrupt_flag", ""),
-		decoders.Offer("message_type", ""),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.DSTemperature, decoders.Celsius),
+		decoders.Offer(decoders.DistanceCM, decoders.Centimeter),
+		decoders.Offer(decoders.DistanceSignalStrength, ""),
+		decoders.Offer(decoders.LidarTemperature, decoders.Celsius),
+		decoders.Offer(decoders.InterruptFlag, ""),
+		decoders.Offer(decoders.MessageType, ""),
 	))
 }
 
@@ -30,15 +30,17 @@ type Data struct {
 	MessageType         int     `json:"message_type"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
-		decoders.Float("lidar_distance_cm", "cm", d.LidarDistanceCM),
-		decoders.Int("lidar_signal_strength", "", d.LidarSignalStrength),
-		decoders.Int("lidar_temp", "C", d.LidarTemp),
-		decoders.Int("interrupt_flag", "", d.InterruptFlag),
-		decoders.Int("message_type", "", d.MessageType),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.DSTemperature, decoders.Celsius, d.TempCDS18B20),
+		decoders.Float(decoders.DistanceCM, decoders.Centimeter, d.LidarDistanceCM),
+		decoders.Int(decoders.DistanceSignalStrength, "", d.LidarSignalStrength),
+		decoders.Int(decoders.LidarTemperature, decoders.Celsius, d.LidarTemp),
+		decoders.Int(decoders.InterruptFlag, "", d.InterruptFlag),
+		decoders.Int(decoders.MessageType, "", d.MessageType),
 	}
 }
 

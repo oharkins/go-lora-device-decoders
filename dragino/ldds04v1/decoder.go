@@ -9,12 +9,12 @@ import (
 
 func init() {
 	decoders.Register("dragino", "ldds04", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("distance1_cm", "cm"),
-		decoders.Offer("distance2_cm", "cm"),
-		decoders.Offer("distance3_cm", "cm"),
-		decoders.Offer("distance4_cm", "cm"),
-		decoders.Offer("mes_type", ""),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Distance1CM, decoders.Centimeter),
+		decoders.Offer(decoders.Distance2CM, decoders.Centimeter),
+		decoders.Offer(decoders.Distance3CM, decoders.Centimeter),
+		decoders.Offer(decoders.Distance4CM, decoders.Centimeter),
+		decoders.Offer(decoders.MessageType, ""),
 	))
 }
 
@@ -28,14 +28,16 @@ type Data struct {
 	MesType     int     `json:"mes_type"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Float("distance1_cm", "cm", d.Distance1CM),
-		decoders.Float("distance2_cm", "cm", d.Distance2CM),
-		decoders.Float("distance3_cm", "cm", d.Distance3CM),
-		decoders.Float("distance4_cm", "cm", d.Distance4CM),
-		decoders.Int("mes_type", "", d.MesType),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.Distance1CM, decoders.Centimeter, d.Distance1CM),
+		decoders.Float(decoders.Distance2CM, decoders.Centimeter, d.Distance2CM),
+		decoders.Float(decoders.Distance3CM, decoders.Centimeter, d.Distance3CM),
+		decoders.Float(decoders.Distance4CM, decoders.Centimeter, d.Distance4CM),
+		decoders.Int(decoders.MessageType, "", d.MesType),
 	}
 }
 

@@ -14,13 +14,13 @@ import (
 func init() {
 	decoders.Register("dragino", "lbt1", "v1", decoders.New(
 		Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("major", ""),
-		decoders.Offer("minor", ""),
-		decoders.Offer("rssi", "dBm"),
-		decoders.Offer("power", "dBm"),
-		decoders.Offer("step_count", "count"),
-		decoders.Offer("alarm", ""),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Major, ""),
+		decoders.Offer(decoders.Minor, ""),
+		decoders.Offer(decoders.RSSI, decoders.DecibelMilliwatt),
+		decoders.Offer(decoders.Power, decoders.DecibelMilliwatt),
+		decoders.Offer(decoders.StepCount, decoders.Count),
+		decoders.Offer(decoders.Alarm, ""),
 	))
 }
 
@@ -39,25 +39,27 @@ type Data struct {
 	BatV               float64 `json:"bat_v"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Int("major", "", d.Major),
-		decoders.Int("minor", "", d.Minor),
-		decoders.Int("step_count", "count", d.StepCount),
-		decoders.Int("alarm", "", d.Alarm),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Int(decoders.Major, "", d.Major),
+		decoders.Int(decoders.Minor, "", d.Minor),
+		decoders.Int(decoders.StepCount, decoders.Count, d.StepCount),
+		decoders.Int(decoders.Alarm, "", d.Alarm),
 	}
 	switch v := d.RSSI.(type) {
 	case int:
-		ms = append(ms, decoders.Int("rssi", "dBm", v))
+		ms = append(ms, decoders.Int(decoders.RSSI, decoders.DecibelMilliwatt, v))
 	case float64:
-		ms = append(ms, decoders.Float("rssi", "dBm", v))
+		ms = append(ms, decoders.Float(decoders.RSSI, decoders.DecibelMilliwatt, v))
 	}
 	switch v := d.Power.(type) {
 	case int:
-		ms = append(ms, decoders.Int("power", "dBm", v))
+		ms = append(ms, decoders.Int(decoders.Power, decoders.DecibelMilliwatt, v))
 	case float64:
-		ms = append(ms, decoders.Float("power", "dBm", v))
+		ms = append(ms, decoders.Float(decoders.Power, decoders.DecibelMilliwatt, v))
 	}
 	return ms
 }

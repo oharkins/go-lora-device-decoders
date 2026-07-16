@@ -34,3 +34,24 @@ func TestEveryDecoderDeclaresOffers(t *testing.T) {
 		}
 	}
 }
+
+func TestPipelineHelpersWithoutDecode(t *testing.T) {
+	if got := decoders.KindOf(struct{}{}); got != decoders.KindTelemetry {
+		t.Fatalf("KindOf(non-message) = %q, want %q", got, decoders.KindTelemetry)
+	}
+
+	v := measuredOnly{}
+	ms, ok := decoders.MeasurementsOf(v)
+	if !ok {
+		t.Fatal("MeasurementsOf(measuredOnly) ok = false, want true")
+	}
+	if len(ms) != 1 || ms[0] != (decoders.Measurement{Name: decoders.Temperature, Value: 22.5, Unit: decoders.Celsius, Valid: true}) {
+		t.Fatalf("MeasurementsOf(measuredOnly) = %#v", ms)
+	}
+}
+
+type measuredOnly struct{}
+
+func (measuredOnly) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{decoders.Float(decoders.Temperature, decoders.Celsius, 22.5)}
+}

@@ -60,17 +60,21 @@ func NewDecoder(cfg RangeConfig) decoders.Decoder {
 
 func baseOffers() []decoders.Offering {
 	return []decoders.Offering{
-		decoders.Offer("battery_percentage", "%"),
-		decoders.Offer("ma", "mA"),
-		decoders.Offer("ma_low", "mA"),
-		decoders.Offer("ma_high", "mA"),
-		decoders.Offer("temperature", "C"),
+		decoders.Offer(decoders.BatteryPercent, decoders.Percent),
+		decoders.Offer(decoders.CurrentMA, decoders.MilliAmp),
+		decoders.Offer(decoders.CurrentMALow, decoders.MilliAmp),
+		decoders.Offer(decoders.CurrentMAHigh, decoders.MilliAmp),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
 	}
 }
 
 func configuredOffers(unit string) []decoders.Offering {
 	offers := baseOffers()
-	offers = append(offers, decoders.Offer("value", unit))
+	offers = append(offers,
+		decoders.Offer(decoders.Value, unit),
+		decoders.Offer("value_low", unit),
+		decoders.Offer("value_high", unit),
+	)
 	return offers
 }
 
@@ -98,16 +102,41 @@ type Data struct {
 	Unit              string   `json:"unit,omitempty"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Int("battery_percentage", "%", d.BatteryPercentage),
-		decoders.Float("ma", "mA", d.MA),
-		decoders.Float("ma_low", "mA", d.MALow),
-		decoders.Float("ma_high", "mA", d.MAHigh),
-		decoders.Int("temperature", "C", d.Temperature),
+		decoders.Int(decoders.BatteryPercent, decoders.Percent, d.BatteryPercentage),
+		currentMeasurement(decoders.CurrentMA, d.MA),
+		currentMeasurement(decoders.CurrentMALow, d.MALow),
+		currentMeasurement(decoders.CurrentMAHigh, d.MAHigh),
+		decoders.Int(decoders.Temperature, decoders.Celsius, d.Temperature),
 	}
-	ms = decoders.AppendFloat(ms, "value", d.Unit, d.Value)
+	ms = appendValueMeasurement(ms, decoders.Value, d.Unit, d.Value)
+	ms = appendValueMeasurement(ms, "value_low", d.Unit, d.ValueLow)
+	ms = appendValueMeasurement(ms, "value_high", d.Unit, d.ValueHigh)
 	return ms
+}
+
+func currentMeasurement(name string, v float64) decoders.Measurement {
+	if v < 4 {
+		return decoders.FloatQuality(name, decoders.MilliAmp, v, false, decoders.QualityFault)
+	}
+	return decoders.Float(name, decoders.MilliAmp, v)
+}
+
+func appendValueMeasurement(ms []decoders.Measurement, name, unit string, v *float64) []decoders.Measurement {
+	if v == nil {
+		return ms
+	}
+	return append(ms, valueMeasurement(name, unit, *v))
+}
+
+func valueMeasurement(name, unit string, v float64) decoders.Measurement {
+	if v == -1 {
+		return decoders.FloatQuality(name, unit, v, false, decoders.QualityFault)
+	}
+	return decoders.Float(name, unit, v)
 }
 
 // Decode decodes a raw TP-11 uplink. mA values are present; Value fields are

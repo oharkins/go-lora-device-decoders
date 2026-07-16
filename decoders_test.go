@@ -81,6 +81,32 @@ func TestAppendHelpers(t *testing.T) {
 	}
 }
 
+func TestKindOfDefaultsToTelemetry(t *testing.T) {
+	if got := decoders.KindOf(struct{}{}); got != decoders.KindTelemetry {
+		t.Fatalf("KindOf(non-message) = %q, want %q", got, decoders.KindTelemetry)
+	}
+}
+
+func TestFloatHelpersValidity(t *testing.T) {
+	m := decoders.Float("temperature", "C", 21.5)
+	if !m.Valid {
+		t.Fatalf("Float() Valid = false, want true: %#v", m)
+	}
+
+	fault := decoders.FloatQuality("temperature", "C", -1, false, decoders.QualityFault)
+	if fault.Valid {
+		t.Fatalf("FloatQuality() Valid = true, want false: %#v", fault)
+	}
+	if fault.Quality != decoders.QualityFault {
+		t.Fatalf("FloatQuality() Quality = %q, want %q", fault.Quality, decoders.QualityFault)
+	}
+
+	valid := decoders.FloatQuality("temperature", "C", 21.5, true, decoders.QualityFault)
+	if !valid.Valid || valid.Quality != "" {
+		t.Fatalf("valid FloatQuality() = %#v, want Valid true with empty Quality", valid)
+	}
+}
+
 type sample struct {
 	Temp float64
 	Hum  float64

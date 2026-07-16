@@ -10,11 +10,11 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lse01", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temp_c_ds18b20", "C"),
-		decoders.Offer("water_soil", "%"),
-		decoders.Offer("temp_soil", "C"),
-		decoders.Offer("conduct_soil", "uS/cm"),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.DSTemperature, decoders.Celsius),
+		decoders.Offer(decoders.SoilMoisture, decoders.Percent),
+		decoders.Offer(decoders.SoilTemp, decoders.Celsius),
+		decoders.Offer(decoders.SoilConductivity, decoders.MicroSiemens),
 	))
 }
 
@@ -26,13 +26,15 @@ type Data struct {
 	ConductSoil  float64 `json:"conduct_soil"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 func (d *Data) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
-		decoders.Float("water_soil", "%", d.WaterSoil),
-		decoders.Float("temp_soil", "C", d.TempSoil),
-		decoders.Float("conduct_soil", "uS/cm", d.ConductSoil),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.DSTemperature, decoders.Celsius, d.TempCDS18B20),
+		decoders.Float(decoders.SoilMoisture, decoders.Percent, d.WaterSoil),
+		decoders.Float(decoders.SoilTemp, decoders.Celsius, d.TempSoil),
+		decoders.Float(decoders.SoilConductivity, decoders.MicroSiemens, d.ConductSoil),
 	}
 }
 

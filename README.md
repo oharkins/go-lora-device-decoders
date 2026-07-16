@@ -64,7 +64,12 @@ Every registered decoder implements:
 - `Decode(Uplink) (any, error)` — typed payload (or `ErrIgnored`)
 - `Offers() []Offering` — measurements the device can produce (discoverable before decode)
 
-Decoded telemetry should implement `Measured` (`Measurements() []Measurement`) so a pipeline can ingest readings without per-device type switches. JSON field names on `Data` stay device-native; measurement names aim for a shared vocabulary (e.g. `battery_voltage`).
+Decoded payloads may also implement:
+
+- `Message` (`MessageKind() Kind`) — routes decoded values as `telemetry`, `device_info`, `datalog`, or `acceleration`. Values that do not implement `Message` default to `KindTelemetry` via `KindOf`.
+- `Measured` (`Measurements() []Measurement`) — exposes readings without per-device type switches. `Measurement.Valid` defaults to true when created with helpers such as `Float`/`Int`; when false, `Quality` gives the reason (for example `fault`, `no_sensor`, or `out_of_range`).
+
+JSON field names on `Data` stay device-native. `Measurement.Name` and `Offering.Name` should use the canonical constants in `names.go` where available (for example `BatteryVoltage`, `BatteryPercent`, `Temperature`, `CurrentMA`, `DistanceMM`, and `Value`) so pipeline schemas remain stable across devices.
 
 ### Configurable decoders (e.g. Vega TP-11)
 
