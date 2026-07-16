@@ -29,14 +29,18 @@ func handle(fport uint8, payload []byte) error {
     if err != nil {
         return err
     }
-    // Uniform pipeline view:
-    if ms, ok := decoders.MeasurementsOf(v); ok {
+    switch decoders.KindOf(v) {
+    case decoders.KindTelemetry:
+        ms, _ := decoders.MeasurementsOf(v)
         for _, m := range ms {
+            if !m.Valid {
+                continue // m.Quality explains fault / no_sensor / etc.
+            }
             _ = m // Name, Value, Unit
         }
+    default:
+        // device_info, datalog, acceleration — route separately
     }
-    // Or type-assert to *lht65v1.Data for device-specific fields
-    _ = v
     return nil
 }
 ```
