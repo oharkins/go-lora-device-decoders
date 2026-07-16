@@ -53,26 +53,26 @@ func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
 
 func (d *Data) Measurements() []decoders.Measurement {
 	var ms []decoders.Measurement
-	ms = decoders.AppendInt(ms, "count1_times", decoders.Count, d.Count1Times)
-	ms = decoders.AppendInt(ms, "count2_times", decoders.Count, d.Count2Times)
-	ms = decoders.AppendInt(ms, "acount_times", decoders.Count, d.AcountTimes)
-	ms = decoders.AppendFloat(ms, "avi1_v", decoders.Volt, d.AVI1V)
-	ms = decoders.AppendFloat(ms, "avi2_v", decoders.Volt, d.AVI2V)
-	ms = decoders.AppendFloat(ms, "aci1_ma", decoders.MilliAmp, d.ACI1MA)
-	ms = decoders.AppendFloat(ms, "aci2_ma", decoders.MilliAmp, d.ACI2MA)
+	ms = decoders.AppendInt(ms, decoders.Count1, decoders.Count, d.Count1Times)
+	ms = decoders.AppendInt(ms, decoders.Count2, decoders.Count, d.Count2Times)
+	ms = decoders.AppendInt(ms, decoders.CountA, decoders.Count, d.AcountTimes)
+	ms = decoders.AppendFloat(ms, decoders.AnalogVoltage1, decoders.Volt, d.AVI1V)
+	ms = decoders.AppendFloat(ms, decoders.AnalogVoltage2, decoders.Volt, d.AVI2V)
+	ms = decoders.AppendFloat(ms, decoders.CurrentMA1, decoders.MilliAmp, d.ACI1MA)
+	ms = decoders.AppendFloat(ms, decoders.CurrentMA2, decoders.MilliAmp, d.ACI2MA)
 	return ms
 }
 
 // Offers are the measurements LT22222-L / LT33222-L devices can produce.
 func Offers() []decoders.Offering {
 	return []decoders.Offering{
-		decoders.Offer("count1_times", decoders.Count),
-		decoders.Offer("count2_times", decoders.Count),
-		decoders.Offer("acount_times", decoders.Count),
-		decoders.Offer("avi1_v", decoders.Volt),
-		decoders.Offer("avi2_v", decoders.Volt),
-		decoders.Offer("aci1_ma", decoders.MilliAmp),
-		decoders.Offer("aci2_ma", decoders.MilliAmp),
+		decoders.Offer(decoders.Count1, decoders.Count),
+		decoders.Offer(decoders.Count2, decoders.Count),
+		decoders.Offer(decoders.CountA, decoders.Count),
+		decoders.Offer(decoders.AnalogVoltage1, decoders.Volt),
+		decoders.Offer(decoders.AnalogVoltage2, decoders.Volt),
+		decoders.Offer(decoders.CurrentMA1, decoders.MilliAmp),
+		decoders.Offer(decoders.CurrentMA2, decoders.MilliAmp),
 	}
 }
 
