@@ -2,6 +2,7 @@ package tp11_test
 
 import (
 	"encoding/base64"
+	"errors"
 	"math"
 	"testing"
 
@@ -52,7 +53,7 @@ var cases = []testCase{
 		batteryPct:  63,
 		temperature: 31,
 		ma:          9.00,
-		maLow:       3.50,  // below 4 mA → fault
+		maLow:       3.50, // below 4 mA → fault
 		maHigh:      20.00,
 		value:       1.5625, // ((9.00-4)/16)*5
 		valueLow:    -1,     // 3.50 mA → fault
@@ -66,6 +67,36 @@ func mustDecode(b64 string) []byte {
 		panic(err)
 	}
 	return b
+}
+
+func assertOffers(t *testing.T, got []decoders.Offering, want []decoders.Offering) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("offers len = %d, want %d: %#v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("offer %d = %#v, want %#v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestOffers(t *testing.T) {
+	dec, ok := decoders.Get("vega", "tp-11", "v1")
+	if !ok {
+		t.Fatal("registered decoder not found")
+	}
+	baseOffers := []decoders.Offering{
+		decoders.Offer("battery_percentage", "%"),
+		decoders.Offer("ma", "mA"),
+		decoders.Offer("ma_low", "mA"),
+		decoders.Offer("ma_high", "mA"),
+		decoders.Offer("temperature", "C"),
+	}
+	assertOffers(t, dec.Offers(), baseOffers)
+
+	configured := tp11.NewDecoder(tp11.RangeConfig{MinVal: 0, MaxVal: 5, Unit: "m"})
+	assertOffers(t, configured.Offers(), append(baseOffers, decoders.Offer("value", "m")))
 }
 
 func TestDecode_Base(t *testing.T) {
@@ -97,6 +128,13 @@ func TestDecode_Base(t *testing.T) {
 			}
 			if d.Value != nil || d.ValueLow != nil || d.ValueHigh != nil {
 				t.Error("base decoder should not populate Value fields")
+			}
+			ms, ok := decoders.MeasurementsOf(d)
+			if !ok {
+				t.Fatal("base data should expose measurements")
+			}
+			if len(ms) != 5 {
+				t.Fatalf("measurements len = %d, want 5: %#v", len(ms), ms)
 			}
 		})
 	}
@@ -134,14 +172,24 @@ func TestDecode_WithRange_0_5m(t *testing.T) {
 			if !approxEqual(*d.ValueHigh, tc.valueHigh) {
 				t.Errorf("value_high = %v, want %v", *d.ValueHigh, tc.valueHigh)
 			}
+			ms, ok := decoders.MeasurementsOf(d)
+			if !ok {
+				t.Fatal("configured data should expose measurements")
+			}
+			if len(ms) != 6 {
+				t.Fatalf("measurements len = %d, want 6: %#v", len(ms), ms)
+			}
+			if got := ms[len(ms)-1]; got.Name != "value" || got.Unit != "m" || !approxEqual(got.Value, tc.value) {
+				t.Fatalf("value measurement = %#v, want value=%v unit=m", got, tc.value)
+			}
 		})
 	}
 }
 
 func TestDecode_Port4(t *testing.T) {
 	v, err := tp11.Decode(decoders.Uplink{FPort: 4, Payload: mustDecode(cases[0].b64)})
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, decoders.ErrIgnored) {
+		t.Fatalf("error = %v, want ErrIgnored", err)
 	}
 	if v != nil {
 		t.Errorf("port 4 should return nil, got %v", v)

@@ -9,7 +9,14 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "laq4", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "laq4", "v1", decoders.New(
+		Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("tvoc_ppb", "ppb"),
+		decoders.Offer("co2_ppm", "ppm"),
+		decoders.Offer("temp", "C"),
+		decoders.Offer("humidity", "%"),
+	))
 }
 
 type Data struct {
@@ -26,6 +33,17 @@ type Data struct {
 	SHTHumMax  *uint8   `json:"sht_hum_max,omitempty"`
 	CO2Min     *int     `json:"co2_min,omitempty"`
 	CO2Max     *int     `json:"co2_max,omitempty"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+	}
+	ms = decoders.AppendInt(ms, "tvoc_ppb", "ppb", d.TVOCPPB)
+	ms = decoders.AppendInt(ms, "co2_ppm", "ppm", d.CO2PPM)
+	ms = decoders.AppendFloat(ms, "temp", "C", d.TempCSHT)
+	ms = decoders.AppendFloat(ms, "humidity", "%", d.HumSHT)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }

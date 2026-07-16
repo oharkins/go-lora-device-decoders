@@ -12,22 +12,54 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lbt1", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lbt1", "v1", decoders.New(
+		Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("major", ""),
+		decoders.Offer("minor", ""),
+		decoders.Offer("rssi", "dBm"),
+		decoders.Offer("power", "dBm"),
+		decoders.Offer("step_count", "count"),
+		decoders.Offer("alarm", ""),
+	))
 }
 
 type Data struct {
-	UUID               string `json:"uuid"`
-	ADDR               string `json:"addr"`
-	Major              int    `json:"major"`
-	Minor              int    `json:"minor"`
-	RSSI               any    `json:"rssi"`
-	Power              any    `json:"power"`
-	DeviceInformation1 string `json:"device_information1"`
-	DeviceInformation2 string `json:"device_information2"`
-	DeviceInformation3 string `json:"device_information3"`
-	StepCount          int    `json:"step_count"`
-	Alarm              int    `json:"alarm"`
+	UUID               string  `json:"uuid"`
+	ADDR               string  `json:"addr"`
+	Major              int     `json:"major"`
+	Minor              int     `json:"minor"`
+	RSSI               any     `json:"rssi"`
+	Power              any     `json:"power"`
+	DeviceInformation1 string  `json:"device_information1"`
+	DeviceInformation2 string  `json:"device_information2"`
+	DeviceInformation3 string  `json:"device_information3"`
+	StepCount          int     `json:"step_count"`
+	Alarm              int     `json:"alarm"`
 	BatV               float64 `json:"bat_v"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Int("major", "", d.Major),
+		decoders.Int("minor", "", d.Minor),
+		decoders.Int("step_count", "count", d.StepCount),
+		decoders.Int("alarm", "", d.Alarm),
+	}
+	switch v := d.RSSI.(type) {
+	case int:
+		ms = append(ms, decoders.Int("rssi", "dBm", v))
+	case float64:
+		ms = append(ms, decoders.Float("rssi", "dBm", v))
+	}
+	switch v := d.Power.(type) {
+	case int:
+		ms = append(ms, decoders.Int("power", "dBm", v))
+	case float64:
+		ms = append(ms, decoders.Float("power", "dBm", v))
+	}
+	return ms
 }
 
 func Decode(u decoders.Uplink) (any, error) {

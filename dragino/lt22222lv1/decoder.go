@@ -9,7 +9,16 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lt22222-l", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lt22222-l", "v1", decoders.New(
+		Decode,
+		decoders.Offer("count1_times", "count"),
+		decoders.Offer("count2_times", "count"),
+		decoders.Offer("acount_times", "count"),
+		decoders.Offer("avi1_v", "V"),
+		decoders.Offer("avi2_v", "V"),
+		decoders.Offer("aci1_ma", "mA"),
+		decoders.Offer("aci2_ma", "mA"),
+	))
 }
 
 type Data struct {
@@ -50,6 +59,18 @@ type Data struct {
 	AC2HStatus   string   `json:"ac2h_status,omitempty"`
 	DI1Flag      string   `json:"di1_flag,omitempty"`
 	DI2Flag      string   `json:"di2_flag,omitempty"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	var ms []decoders.Measurement
+	ms = decoders.AppendInt(ms, "count1_times", "count", d.Count1Times)
+	ms = decoders.AppendInt(ms, "count2_times", "count", d.Count2Times)
+	ms = decoders.AppendInt(ms, "acount_times", "count", d.AcountTimes)
+	ms = decoders.AppendFloat(ms, "avi1_v", "V", d.AVI1V)
+	ms = decoders.AppendFloat(ms, "avi2_v", "V", d.AVI2V)
+	ms = decoders.AppendFloat(ms, "aci1_ma", "mA", d.ACI1MA)
+	ms = decoders.AppendFloat(ms, "aci2_ma", "mA", d.ACI2MA)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }

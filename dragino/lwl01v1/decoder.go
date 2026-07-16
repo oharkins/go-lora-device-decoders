@@ -8,7 +8,18 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lwl01", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lwl01", "v1", decoders.New(
+		Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("mod", ""),
+		decoders.Offer("door_open_status", ""),
+		decoders.Offer("water_leak_status", ""),
+		decoders.Offer("door_open_times", "count"),
+		decoders.Offer("last_door_open_duration", "s"),
+		decoders.Offer("water_leak_times", "count"),
+		decoders.Offer("last_water_leak_duration", "s"),
+		decoders.Offer("alarm", ""),
+	))
 }
 
 type Data struct {
@@ -21,6 +32,21 @@ type Data struct {
 	WaterLeakTimes        *int    `json:"water_leak_times,omitempty"`
 	LastWaterLeakDuration *int    `json:"last_water_leak_duration,omitempty"`
 	Alarm                 *int    `json:"alarm,omitempty"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Int("mod", "", d.Mod),
+	}
+	ms = decoders.AppendInt(ms, "door_open_status", "", d.DoorOpenStatus)
+	ms = decoders.AppendInt(ms, "water_leak_status", "", d.WaterLeakStatus)
+	ms = decoders.AppendInt(ms, "door_open_times", "count", d.DoorOpenTimes)
+	ms = decoders.AppendInt(ms, "last_door_open_duration", "s", d.LastDoorOpenDuration)
+	ms = decoders.AppendInt(ms, "water_leak_times", "count", d.WaterLeakTimes)
+	ms = decoders.AppendInt(ms, "last_water_leak_duration", "s", d.LastWaterLeakDuration)
+	ms = decoders.AppendInt(ms, "alarm", "", d.Alarm)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }

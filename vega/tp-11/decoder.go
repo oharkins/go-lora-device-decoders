@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	decoders.Register("vega", "tp-11", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("vega", "tp-11", "v1", decoders.New(Decode, baseOffers()...))
 }
 
 // RangeConfig maps the 4-20 mA signal to an engineering unit using a linear
@@ -33,7 +33,7 @@ func (r RangeConfig) Convert(mA float64) float64 {
 	if mA < 4 {
 		return -1
 	}
-	v := ((mA - 4) / 16) * (r.MaxVal - r.MinVal) + r.MinVal
+	v := ((mA-4)/16)*(r.MaxVal-r.MinVal) + r.MinVal
 	return math.Max(r.MinVal, math.Min(r.MaxVal, v))
 }
 
@@ -41,7 +41,7 @@ func (r RangeConfig) Convert(mA float64) float64 {
 // the standard TP-11 byte parsing. The resulting Data will have Value,
 // ValueLow, ValueHigh, and Unit populated in addition to the raw mA fields.
 func NewDecoder(cfg RangeConfig) decoders.Decoder {
-	return decoders.DecoderFunc(func(u decoders.Uplink) (any, error) {
+	return decoders.New(func(u decoders.Uplink) (any, error) {
 		raw, err := Decode(u)
 		if err != nil || raw == nil {
 			return raw, err
@@ -55,7 +55,23 @@ func NewDecoder(cfg RangeConfig) decoders.Decoder {
 		d.ValueHigh = &vh
 		d.Unit = cfg.Unit
 		return d, nil
-	})
+	}, configuredOffers(cfg.Unit)...)
+}
+
+func baseOffers() []decoders.Offering {
+	return []decoders.Offering{
+		decoders.Offer("battery_percentage", "%"),
+		decoders.Offer("ma", "mA"),
+		decoders.Offer("ma_low", "mA"),
+		decoders.Offer("ma_high", "mA"),
+		decoders.Offer("temperature", "C"),
+	}
+}
+
+func configuredOffers(unit string) []decoders.Offering {
+	offers := baseOffers()
+	offers = append(offers, decoders.Offer("value", unit))
+	return offers
 }
 
 var reasons = [...]string{
@@ -82,13 +98,25 @@ type Data struct {
 	Unit              string   `json:"unit,omitempty"`
 }
 
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Int("battery_percentage", "%", d.BatteryPercentage),
+		decoders.Float("ma", "mA", d.MA),
+		decoders.Float("ma_low", "mA", d.MALow),
+		decoders.Float("ma_high", "mA", d.MAHigh),
+		decoders.Int("temperature", "C", d.Temperature),
+	}
+	ms = decoders.AppendFloat(ms, "value", d.Unit, d.Value)
+	return ms
+}
+
 // Decode decodes a raw TP-11 uplink. mA values are present; Value fields are
 // not populated — use NewDecoder for engineering-unit conversion.
 func Decode(u decoders.Uplink) (any, error) {
 	b := u.Payload
 
 	if u.FPort == 4 {
-		return nil, nil
+		return nil, decoders.ErrIgnored
 	}
 	if len(b) < 16 {
 		return nil, fmt.Errorf("tp11: payload too short: %d bytes (want >= 16)", len(b))

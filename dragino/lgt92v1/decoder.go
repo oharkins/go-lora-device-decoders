@@ -8,22 +8,43 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lgt92", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lgt92", "v1", decoders.New(
+		Decode,
+		decoders.Offer("lat", "deg"),
+		decoders.Offer("lon", "deg"),
+		decoders.Offer("altitude", "m"),
+		decoders.Offer("bat", "V"),
+		decoders.Offer("roll", "deg"),
+		decoders.Offer("pitch", "deg"),
+		decoders.Offer("hdop", ""),
+	))
 }
 
 type Data struct {
-	Latitude   float64 `json:"latitude"`
-	Longitude  float64 `json:"longitude"`
-	Altitude   float64 `json:"altitude"`
-	Accuracy   int     `json:"accuracy"`
-	Roll       float64 `json:"roll"`
-	Pitch      float64 `json:"pitch"`
-	BatV       float64 `json:"bat_v"`
-	AlarmStatus string `json:"alarm_status"`
-	MotionMode  string `json:"motion_mode"`
-	LEDUpDown   string `json:"led_updown"`
-	Firmware    int    `json:"firmware"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	Altitude    float64 `json:"altitude"`
+	Accuracy    int     `json:"accuracy"`
+	Roll        float64 `json:"roll"`
+	Pitch       float64 `json:"pitch"`
+	BatV        float64 `json:"bat_v"`
+	AlarmStatus string  `json:"alarm_status"`
+	MotionMode  string  `json:"motion_mode"`
+	LEDUpDown   string  `json:"led_updown"`
+	Firmware    int     `json:"firmware"`
 	HDOP        float64 `json:"hdop"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float("lat", "deg", d.Latitude),
+		decoders.Float("lon", "deg", d.Longitude),
+		decoders.Float("altitude", "m", d.Altitude),
+		decoders.Float("bat", "V", d.BatV),
+		decoders.Float("roll", "deg", d.Roll),
+		decoders.Float("pitch", "deg", d.Pitch),
+		decoders.Float("hdop", "", d.HDOP),
+	}
 }
 
 func Decode(u decoders.Uplink) (any, error) {

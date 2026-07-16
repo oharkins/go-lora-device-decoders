@@ -9,7 +9,14 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "ltc2", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "ltc2", "v1", decoders.New(
+		Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("temp_channel1", "C"),
+		decoders.Offer("temp_channel2", "C"),
+		decoders.Offer("res_channel1", "ohm"),
+		decoders.Offer("res_channel2", "ohm"),
+	))
 }
 
 type Data struct {
@@ -20,6 +27,17 @@ type Data struct {
 	ResChannel1  *float64 `json:"res_channel1,omitempty"`
 	ResChannel2  *float64 `json:"res_channel2,omitempty"`
 	SysTimestamp int64    `json:"sys_timestamp"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+	}
+	ms = decoders.AppendFloat(ms, "temp_channel1", "C", d.TempChannel1)
+	ms = decoders.AppendFloat(ms, "temp_channel2", "C", d.TempChannel2)
+	ms = decoders.AppendFloat(ms, "res_channel1", "ohm", d.ResChannel1)
+	ms = decoders.AppendFloat(ms, "res_channel2", "ohm", d.ResChannel2)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -36,7 +54,7 @@ func Decode(u decoders.Uplink) (any, error) {
 	}
 	pollStatus := (b[2] & 0x40) >> 6
 	if pollStatus != 0 {
-		return nil, nil
+		return nil, decoders.ErrIgnored
 	}
 	ext := int(b[2] & 0x0F)
 	d := &Data{
