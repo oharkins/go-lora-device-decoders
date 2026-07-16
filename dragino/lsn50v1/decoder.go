@@ -9,7 +9,19 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lsn50", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lsn50", "v1", decoders.New(Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("temp_c1", "C"),
+		decoders.Offer("adc_ch0v", "V"),
+		decoders.Offer("adc_ch1v", "V"),
+		decoders.Offer("adc_ch4v", "V"),
+		decoders.Offer("temp_c_sht", "C"),
+		decoders.Offer("hum_sht", "%"),
+		decoders.Offer("distance", "cm"),
+		decoders.Offer("temp_c2", "C"),
+		decoders.Offer("temp_c3", "C"),
+		decoders.Offer("weight", "g"),
+	))
 }
 
 type Data struct {
@@ -30,6 +42,23 @@ type Data struct {
 	Weight         *int     `json:"weight,omitempty"`
 }
 
+func (d *Data) Measurements() []decoders.Measurement {
+	measurements := []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+	}
+	measurements = decoders.AppendFloat(measurements, "temp_c1", "C", d.TempC1)
+	measurements = decoders.AppendFloat(measurements, "adc_ch0v", "V", d.ADCCH0V)
+	measurements = decoders.AppendFloat(measurements, "adc_ch1v", "V", d.ADCCH1V)
+	measurements = decoders.AppendFloat(measurements, "adc_ch4v", "V", d.ADCCH4V)
+	measurements = decoders.AppendFloat(measurements, "temp_c_sht", "C", d.TempCSHT)
+	measurements = decoders.AppendFloat(measurements, "hum_sht", "%", d.HumSHT)
+	measurements = decoders.AppendFloat(measurements, "distance", "cm", d.Distance)
+	measurements = decoders.AppendFloat(measurements, "temp_c2", "C", d.TempC2)
+	measurements = decoders.AppendFloat(measurements, "temp_c3", "C", d.TempC3)
+	measurements = decoders.AppendInt(measurements, "weight", "g", d.Weight)
+	return measurements
+}
+
 func ptr[T any](v T) *T { return &v }
 
 func round(v float64, places int) float64 {
@@ -47,6 +76,9 @@ func Decode(u decoders.Uplink) (any, error) {
 		return nil, fmt.Errorf("lsn50v1: payload too short: %d bytes (want >= 11)", len(b))
 	}
 	mode := (b[6] & 0x7C) >> 2
+	if mode == 2 && len(b) < 12 {
+		return nil, fmt.Errorf("lsn50v1: payload too short: %d bytes (want >= 12 for mode 2)", len(b))
+	}
 	d := &Data{}
 
 	switch mode {

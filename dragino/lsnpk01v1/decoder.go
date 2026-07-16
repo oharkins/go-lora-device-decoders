@@ -9,17 +9,37 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lsnpk01", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lsnpk01", "v1", decoders.New(Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("temp_c_ds18b20", "C"),
+		decoders.Offer("n_soil", "mg/kg"),
+		decoders.Offer("p_soil", "mg/kg"),
+		decoders.Offer("k_soil", "mg/kg"),
+		decoders.Offer("interrupt_flag", ""),
+		decoders.Offer("message_type", ""),
+	))
 }
 
 type Data struct {
-	BatV         float64 `json:"bat_v"`
-	TempCDS18B20 float64 `json:"temp_c_ds18b20"`
-	NSoil        int     `json:"n_soil"`
-	PSoil        int     `json:"p_soil"`
-	KSoil        int     `json:"k_soil"`
-	InterruptFlag int    `json:"interrupt_flag"`
-	MessageType  int     `json:"message_type"`
+	BatV          float64 `json:"bat_v"`
+	TempCDS18B20  float64 `json:"temp_c_ds18b20"`
+	NSoil         int     `json:"n_soil"`
+	PSoil         int     `json:"p_soil"`
+	KSoil         int     `json:"k_soil"`
+	InterruptFlag int     `json:"interrupt_flag"`
+	MessageType   int     `json:"message_type"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
+		decoders.Int("n_soil", "mg/kg", d.NSoil),
+		decoders.Int("p_soil", "mg/kg", d.PSoil),
+		decoders.Int("k_soil", "mg/kg", d.KSoil),
+		decoders.Int("interrupt_flag", "", d.InterruptFlag),
+		decoders.Int("message_type", "", d.MessageType),
+	}
 }
 
 func round(v float64, places int) float64 {

@@ -9,7 +9,13 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lse01", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lse01", "v1", decoders.New(Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("temp_c_ds18b20", "C"),
+		decoders.Offer("water_soil", "%"),
+		decoders.Offer("temp_soil", "C"),
+		decoders.Offer("conduct_soil", "uS/cm"),
+	))
 }
 
 type Data struct {
@@ -18,6 +24,16 @@ type Data struct {
 	WaterSoil    float64 `json:"water_soil"`
 	TempSoil     float64 `json:"temp_soil"`
 	ConductSoil  float64 `json:"conduct_soil"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
+		decoders.Float("water_soil", "%", d.WaterSoil),
+		decoders.Float("temp_soil", "C", d.TempSoil),
+		decoders.Float("conduct_soil", "uS/cm", d.ConductSoil),
+	}
 }
 
 func round(v float64, places int) float64 {

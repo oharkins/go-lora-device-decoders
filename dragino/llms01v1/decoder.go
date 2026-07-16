@@ -9,7 +9,14 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "llms01", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "llms01", "v1", decoders.New(Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("temp_c_ds18b20", "C"),
+		decoders.Offer("leaf_moisture", "%"),
+		decoders.Offer("leaf_temp", "C"),
+		decoders.Offer("interrupt_flag", ""),
+		decoders.Offer("message_type", ""),
+	))
 }
 
 type Data struct {
@@ -19,6 +26,17 @@ type Data struct {
 	LeafTemp      float64 `json:"leaf_temp"`
 	InterruptFlag int     `json:"interrupt_flag"`
 	MessageType   int     `json:"message_type"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+		decoders.Float("temp_c_ds18b20", "C", d.TempCDS18B20),
+		decoders.Float("leaf_moisture", "%", d.LeafMoisture),
+		decoders.Float("leaf_temp", "C", d.LeafTemp),
+		decoders.Int("interrupt_flag", "", d.InterruptFlag),
+		decoders.Int("message_type", "", d.MessageType),
+	}
 }
 
 func round(v float64, places int) float64 {
@@ -47,11 +65,11 @@ func Decode(u decoders.Uplink) (any, error) {
 		rawVal = int32(raw)
 	}
 	return &Data{
-		BatV:         float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		TempCDS18B20: round(float64(rawVal)/10, 2),
-		LeafMoisture: round(float64(uint16(b[4])<<8|uint16(b[5]))/10, 2),
-		LeafTemp:     signedSoilTemp(b[6], b[7], 10),
+		BatV:          float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		TempCDS18B20:  round(float64(rawVal)/10, 2),
+		LeafMoisture:  round(float64(uint16(b[4])<<8|uint16(b[5]))/10, 2),
+		LeafTemp:      signedSoilTemp(b[6], b[7], 10),
 		InterruptFlag: int(b[8]),
-		MessageType:  int(b[10]),
+		MessageType:   int(b[10]),
 	}, nil
 }

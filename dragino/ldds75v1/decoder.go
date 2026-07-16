@@ -8,7 +8,11 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "ldds75", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "ldds75", "v1", decoders.New(Decode,
+		decoders.Offer("bat_v", "V"),
+		decoders.Offer("distance_mm", "mm"),
+		decoders.Offer("interrupt_status", ""),
+	))
 }
 
 type Data struct {
@@ -16,6 +20,15 @@ type Data struct {
 	DistanceMM      *int    `json:"distance_mm,omitempty"`
 	DistanceStatus  string  `json:"distance_status,omitempty"`
 	InterruptStatus int     `json:"interrupt_status"`
+}
+
+func (d *Data) Measurements() []decoders.Measurement {
+	measurements := []decoders.Measurement{
+		decoders.Float("bat_v", "V", d.BatV),
+	}
+	measurements = decoders.AppendInt(measurements, "distance_mm", "mm", d.DistanceMM)
+	measurements = append(measurements, decoders.Int("interrupt_status", "", d.InterruptStatus))
+	return measurements
 }
 
 func ptr[T any](v T) *T { return &v }
