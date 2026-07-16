@@ -5,7 +5,7 @@
 //  1. Look up a decoder (or its Offers) from device metadata
 //  2. Call Decode on an uplink
 //  3. Treat ErrIgnored as a soft skip
-//  4. Read typed Data via assertion, or Measurements() for a uniform view
+//  4. Route by KindOf(v), then read Measurements() for a uniform view
 package decoders
 
 import (
@@ -26,8 +26,24 @@ type Uplink struct {
 	Payload []byte
 }
 
+// Kind classifies a decoded uplink for pipeline routing.
+type Kind string
+
+const (
+	KindTelemetry  Kind = "telemetry"
+	KindDeviceInfo Kind = "device_info"
+	KindDatalog    Kind = "datalog"
+	KindAccel      Kind = "acceleration"
+)
+
+// Message is implemented by decoded payloads that declare their pipeline kind.
+// If a value does not implement Message, KindOf treats it as KindTelemetry.
+type Message interface {
+	MessageKind() Kind
+}
+
 // Offering declares a measurement a decoder can produce. Name should be a
-// stable, snake_case identifier shared with Measurement.Name.
+// stable, snake_case identifier from the canonical vocabulary (see names.go).
 type Offering struct {
 	Name string `json:"name"`
 	Unit string `json:"unit,omitempty"`
@@ -39,11 +55,23 @@ func Offer(name, unit string) Offering {
 }
 
 // Measurement is one normalized reading from a decoded uplink.
+// Valid is true for usable readings; when false, Quality explains why.
 type Measurement struct {
-	Name  string  `json:"name"`
-	Value float64 `json:"value"`
-	Unit  string  `json:"unit,omitempty"`
+	Name    string  `json:"name"`
+	Value   float64 `json:"value"`
+	Unit    string  `json:"unit,omitempty"`
+	Valid   bool    `json:"valid"`
+	Quality string  `json:"quality,omitempty"`
 }
+
+// Common quality reasons for Valid == false.
+const (
+	QualityInvalid      = "invalid"
+	QualityNoSensor     = "no_sensor"
+	QualityFault        = "fault"
+	QualityNoConnection = "no_connection"
+	QualityOutOfRange   = "out_of_range"
+)
 
 // Measured is implemented by decoded payloads that expose pipeline-ready readings.
 type Measured interface {
@@ -52,7 +80,7 @@ type Measured interface {
 
 // Decoder decodes a raw uplink into a typed value and declares the measurements
 // it can offer. The returned value must be JSON-marshalable; prefer implementing
-// Measured for pipeline consumers.
+// Measured and Message for pipeline consumers.
 type Decoder interface {
 	Decode(u Uplink) (any, error)
 	Offers() []Offering
@@ -183,36 +211,54 @@ func MeasurementsOf(v any) ([]Measurement, bool) {
 	return nil, false
 }
 
-// AppendFloat appends a measurement when v is non-nil.
+// KindOf returns the message kind. Values that do not implement Message are
+// treated as KindTelemetry.
+func KindOf(v any) Kind {
+	if m, ok := v.(Message); ok {
+		return m.MessageKind()
+	}
+	return KindTelemetry
+}
+
+// AppendFloat appends a valid measurement when v is non-nil.
 func AppendFloat(dst []Measurement, name, unit string, v *float64) []Measurement {
 	if v == nil {
 		return dst
 	}
-	return append(dst, Measurement{Name: name, Value: *v, Unit: unit})
+	return append(dst, Float(name, unit, *v))
 }
 
-// AppendInt appends a measurement when v is non-nil.
+// AppendInt appends a valid measurement when v is non-nil.
 func AppendInt(dst []Measurement, name, unit string, v *int) []Measurement {
 	if v == nil {
 		return dst
 	}
-	return append(dst, Measurement{Name: name, Value: float64(*v), Unit: unit})
+	return append(dst, Int(name, unit, *v))
 }
 
-// AppendInt64 appends a measurement when v is non-nil.
+// AppendInt64 appends a valid measurement when v is non-nil.
 func AppendInt64(dst []Measurement, name, unit string, v *int64) []Measurement {
 	if v == nil {
 		return dst
 	}
-	return append(dst, Measurement{Name: name, Value: float64(*v), Unit: unit})
+	return append(dst, Measurement{Name: name, Value: float64(*v), Unit: unit, Valid: true})
 }
 
-// Float is a helper for required (non-pointer) numeric fields.
+// Float is a helper for a valid required numeric field.
 func Float(name, unit string, v float64) Measurement {
-	return Measurement{Name: name, Value: v, Unit: unit}
+	return Measurement{Name: name, Value: v, Unit: unit, Valid: true}
 }
 
-// Int is a helper for required integer fields exposed as measurements.
+// Int is a helper for a valid required integer field.
 func Int(name, unit string, v int) Measurement {
-	return Measurement{Name: name, Value: float64(v), Unit: unit}
+	return Measurement{Name: name, Value: float64(v), Unit: unit, Valid: true}
+}
+
+// FloatQuality is a reading with an explicit validity/quality.
+func FloatQuality(name, unit string, v float64, valid bool, quality string) Measurement {
+	m := Measurement{Name: name, Value: v, Unit: unit, Valid: valid}
+	if !valid {
+		m.Quality = quality
+	}
+	return m
 }
