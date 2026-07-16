@@ -25,14 +25,14 @@ func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
 		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
-		decoders.Int("mod", "", d.Mod),
+		decoders.Int(decoders.Mode, "", d.Mod),
 	}
 	ms = decoders.AppendInt(ms, decoders.DoorOpenStatus, "", d.DoorOpenStatus)
 	ms = decoders.AppendInt(ms, decoders.WaterLeakStatus, "", d.WaterLeakStatus)
-	ms = decoders.AppendInt(ms, "door_open_times", decoders.Count, d.DoorOpenTimes)
-	ms = decoders.AppendInt(ms, "last_door_open_duration", "s", d.LastDoorOpenDuration)
-	ms = decoders.AppendInt(ms, "water_leak_times", decoders.Count, d.WaterLeakTimes)
-	ms = decoders.AppendInt(ms, "last_water_leak_duration", "s", d.LastWaterLeakDuration)
+	ms = decoders.AppendInt(ms, decoders.DoorOpenTimes, decoders.Count, d.DoorOpenTimes)
+	ms = decoders.AppendInt(ms, decoders.DoorOpenDuration, decoders.Second, d.LastDoorOpenDuration)
+	ms = decoders.AppendInt(ms, decoders.WaterLeakTimes, decoders.Count, d.WaterLeakTimes)
+	ms = decoders.AppendInt(ms, decoders.WaterLeakDuration, decoders.Second, d.LastWaterLeakDuration)
 	ms = decoders.AppendInt(ms, decoders.Alarm, "", d.Alarm)
 	return ms
 }
@@ -41,13 +41,13 @@ func (d *Data) Measurements() []decoders.Measurement {
 func Offers() []decoders.Offering {
 	return []decoders.Offering{
 		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
-		decoders.Offer("mod", ""),
+		decoders.Offer(decoders.Mode, ""),
 		decoders.Offer(decoders.DoorOpenStatus, ""),
 		decoders.Offer(decoders.WaterLeakStatus, ""),
-		decoders.Offer("door_open_times", decoders.Count),
-		decoders.Offer("last_door_open_duration", "s"),
-		decoders.Offer("water_leak_times", decoders.Count),
-		decoders.Offer("last_water_leak_duration", "s"),
+		decoders.Offer(decoders.DoorOpenTimes, decoders.Count),
+		decoders.Offer(decoders.DoorOpenDuration, decoders.Second),
+		decoders.Offer(decoders.WaterLeakTimes, decoders.Count),
+		decoders.Offer(decoders.WaterLeakDuration, decoders.Second),
 		decoders.Offer(decoders.Alarm, ""),
 	}
 }
