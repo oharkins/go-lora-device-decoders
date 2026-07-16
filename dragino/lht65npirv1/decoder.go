@@ -10,7 +10,21 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lht65n-pir", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lht65n-pir", "v1", decoders.New(Decode,
+		decoders.Offer("battery_voltage", "V"),
+		decoders.Offer("temperature", "C"),
+		decoders.Offer("humidity", "%"),
+		decoders.Offer("ds_temperature", "C"),
+		decoders.Offer("tmp117_temperature", "C"),
+		decoders.Offer("exti_count", "count"),
+		decoders.Offer("exti_duration", "s"),
+		decoders.Offer("move_count", "count"),
+		decoders.Offer("illumination", "lx"),
+		decoders.Offer("adc_voltage", "V"),
+		decoders.Offer("system_timestamp", "s"),
+		decoders.Offer("external_temperature", "C"),
+		decoders.Offer("external_humidity", "%"),
+	))
 }
 
 type Data struct {
@@ -37,6 +51,25 @@ type Data struct {
 	ID           string   `json:"id,omitempty"`
 }
 
+// Measurements returns the numeric readings decoded from this uplink.
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := make([]decoders.Measurement, 0, 13)
+	ms = decoders.AppendFloat(ms, "battery_voltage", "V", d.BatV)
+	ms = decoders.AppendFloat(ms, "temperature", "C", d.TempCSHT)
+	ms = decoders.AppendFloat(ms, "humidity", "%", d.HumSHT)
+	ms = decoders.AppendFloat(ms, "ds_temperature", "C", d.TempCDS)
+	ms = decoders.AppendFloat(ms, "tmp117_temperature", "C", d.TempCTMP117)
+	ms = decoders.AppendInt64(ms, "exti_count", "count", d.ExitCount)
+	ms = decoders.AppendInt(ms, "exti_duration", "s", d.ExitDuration)
+	ms = decoders.AppendInt(ms, "move_count", "count", d.MoveCount)
+	ms = decoders.AppendInt(ms, "illumination", "lx", d.ILLLx)
+	ms = decoders.AppendFloat(ms, "adc_voltage", "V", d.ADCV)
+	ms = decoders.AppendInt64(ms, "system_timestamp", "s", d.SysTimestamp)
+	ms = decoders.AppendFloat(ms, "external_temperature", "C", d.ExtTempCSHT)
+	ms = decoders.AppendFloat(ms, "external_humidity", "%", d.ExtHumSHT)
+	return ms
+}
+
 type DeviceInfo struct {
 	NodeType        string  `json:"node_type"`
 	SensorModel     string  `json:"sensor_model"`
@@ -44,6 +77,13 @@ type DeviceInfo struct {
 	FrequencyBand   string  `json:"frequency_band"`
 	SubBand         any     `json:"sub_band"`
 	Bat             float64 `json:"bat"`
+}
+
+// Measurements returns the numeric readings decoded from this device-info uplink.
+func (d *DeviceInfo) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float("battery_voltage", "V", d.Bat),
+	}
 }
 
 func ptr[T any](v T) *T { return &v }

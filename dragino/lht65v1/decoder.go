@@ -10,7 +10,15 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lht65", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lht65", "v1", decoders.New(Decode,
+		decoders.Offer("battery_voltage", "V"),
+		decoders.Offer("temperature", "C"),
+		decoders.Offer("humidity", "%"),
+		decoders.Offer("external_temperature", "C"),
+		decoders.Offer("illumination", "lx"),
+		decoders.Offer("adc_voltage", "V"),
+		decoders.Offer("interrupt_count", "count"),
+	))
 }
 
 var sensorTypes = map[byte]string{
@@ -38,6 +46,20 @@ type Data struct {
 	ADCVoltage             *float64 `json:"adc_voltage,omitempty"`
 	InterruptCount         *int     `json:"interrupt_count,omitempty"`
 	SensorConnectionStatus *string  `json:"sensor_connection_status,omitempty"`
+}
+
+// Measurements returns the numeric readings decoded from this uplink.
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float("battery_voltage", "V", d.BatteryVoltage),
+		decoders.Float("temperature", "C", d.Temperature),
+		decoders.Float("humidity", "%", d.Humidity),
+	}
+	ms = decoders.AppendFloat(ms, "external_temperature", "C", d.ExternalTemperature)
+	ms = decoders.AppendInt(ms, "illumination", "lx", d.Illumination)
+	ms = decoders.AppendFloat(ms, "adc_voltage", "V", d.ADCVoltage)
+	ms = decoders.AppendInt(ms, "interrupt_count", "count", d.InterruptCount)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }
