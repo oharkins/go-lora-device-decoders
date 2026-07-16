@@ -42,36 +42,36 @@ func (d *Data) Measurements() []decoders.Measurement {
 	measurements := []decoders.Measurement{
 		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
 	}
-	measurements = decoders.AppendFloat(measurements, "temperature_probe", decoders.Celsius, d.TempC1)
-	measurements = decoders.AppendFloat(measurements, "adc_ch0v", decoders.Volt, d.ADCCH0V)
-	measurements = decoders.AppendFloat(measurements, "adc_ch1v", decoders.Volt, d.ADCCH1V)
-	measurements = decoders.AppendFloat(measurements, "adc_ch4v", decoders.Volt, d.ADCCH4V)
+	measurements = decoders.AppendFloat(measurements, decoders.TemperatureProbe, decoders.Celsius, d.TempC1)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH0Voltage, decoders.Volt, d.ADCCH0V)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH1Voltage, decoders.Volt, d.ADCCH1V)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH4Voltage, decoders.Volt, d.ADCCH4V)
 	measurements = decoders.AppendFloat(measurements, decoders.Temperature, decoders.Celsius, d.TempCSHT)
 	measurements = decoders.AppendFloat(measurements, decoders.Humidity, decoders.Percent, d.HumSHT)
 	measurements = decoders.AppendInt(measurements, decoders.Illumination, decoders.Lux, d.Illum)
 	measurements = decoders.AppendFloat(measurements, decoders.DistanceCM, decoders.Centimeter, d.DistanceCM)
-	measurements = decoders.AppendFloat(measurements, "distance_signal_strength", "", d.DistanceSignal)
-	measurements = decoders.AppendFloat(measurements, "temp_c2", decoders.Celsius, d.TempC2)
-	measurements = decoders.AppendFloat(measurements, "temp_c3", decoders.Celsius, d.TempC3)
+	measurements = decoders.AppendFloat(measurements, decoders.DistanceSignalStrength, "", d.DistanceSignal)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature2, decoders.Celsius, d.TempC2)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature3, decoders.Celsius, d.TempC3)
 	measurements = decoders.AppendInt(measurements, decoders.Weight, decoders.Gram, d.Weight)
-	measurements = decoders.AppendInt(measurements, "count", decoders.Count, d.Count)
+	measurements = decoders.AppendInt(measurements, decoders.EventCount, decoders.Count, d.Count)
 	if d.TempC1Min != nil {
-		measurements = append(measurements, decoders.Int("temp_c1_min", decoders.Celsius, int(*d.TempC1Min)))
+		measurements = append(measurements, decoders.Int(decoders.TemperatureProbeMin, decoders.Celsius, int(*d.TempC1Min)))
 	}
 	if d.TempC1Max != nil {
-		measurements = append(measurements, decoders.Int("temp_c1_max", decoders.Celsius, int(*d.TempC1Max)))
+		measurements = append(measurements, decoders.Int(decoders.TemperatureProbeMax, decoders.Celsius, int(*d.TempC1Max)))
 	}
 	if d.SHTEmpMin != nil {
-		measurements = append(measurements, decoders.Int("sht_temp_min", decoders.Celsius, int(*d.SHTEmpMin)))
+		measurements = append(measurements, decoders.Int(decoders.SHTTemperatureMin, decoders.Celsius, int(*d.SHTEmpMin)))
 	}
 	if d.SHTEmpMax != nil {
-		measurements = append(measurements, decoders.Int("sht_temp_max", decoders.Celsius, int(*d.SHTEmpMax)))
+		measurements = append(measurements, decoders.Int(decoders.SHTTemperatureMax, decoders.Celsius, int(*d.SHTEmpMax)))
 	}
 	if d.SHTHumMin != nil {
-		measurements = append(measurements, decoders.Int("sht_hum_min", decoders.Percent, int(*d.SHTHumMin)))
+		measurements = append(measurements, decoders.Int(decoders.SHTHumidityMin, decoders.Percent, int(*d.SHTHumMin)))
 	}
 	if d.SHTHumMax != nil {
-		measurements = append(measurements, decoders.Int("sht_hum_max", decoders.Percent, int(*d.SHTHumMax)))
+		measurements = append(measurements, decoders.Int(decoders.SHTHumidityMax, decoders.Percent, int(*d.SHTHumMax)))
 	}
 	return measurements
 }
@@ -80,25 +80,25 @@ func (d *Data) Measurements() []decoders.Measurement {
 func Offers() []decoders.Offering {
 	return []decoders.Offering{
 		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
-		decoders.Offer("temperature_probe", decoders.Celsius),
-		decoders.Offer("adc_ch0v", decoders.Volt),
-		decoders.Offer("adc_ch1v", decoders.Volt),
-		decoders.Offer("adc_ch4v", decoders.Volt),
+		decoders.Offer(decoders.TemperatureProbe, decoders.Celsius),
+		decoders.Offer(decoders.ADCCH0Voltage, decoders.Volt),
+		decoders.Offer(decoders.ADCCH1Voltage, decoders.Volt),
+		decoders.Offer(decoders.ADCCH4Voltage, decoders.Volt),
 		decoders.Offer(decoders.Temperature, decoders.Celsius),
 		decoders.Offer(decoders.Humidity, decoders.Percent),
 		decoders.Offer(decoders.Illumination, decoders.Lux),
 		decoders.Offer(decoders.DistanceCM, decoders.Centimeter),
-		decoders.Offer("distance_signal_strength", ""),
-		decoders.Offer("temp_c2", decoders.Celsius),
-		decoders.Offer("temp_c3", decoders.Celsius),
+		decoders.Offer(decoders.DistanceSignalStrength, ""),
+		decoders.Offer(decoders.Temperature2, decoders.Celsius),
+		decoders.Offer(decoders.Temperature3, decoders.Celsius),
 		decoders.Offer(decoders.Weight, decoders.Gram),
-		decoders.Offer("count", decoders.Count),
-		decoders.Offer("temp_c1_min", decoders.Celsius),
-		decoders.Offer("temp_c1_max", decoders.Celsius),
-		decoders.Offer("sht_temp_min", decoders.Celsius),
-		decoders.Offer("sht_temp_max", decoders.Celsius),
-		decoders.Offer("sht_hum_min", decoders.Percent),
-		decoders.Offer("sht_hum_max", decoders.Percent),
+		decoders.Offer(decoders.EventCount, decoders.Count),
+		decoders.Offer(decoders.TemperatureProbeMin, decoders.Celsius),
+		decoders.Offer(decoders.TemperatureProbeMax, decoders.Celsius),
+		decoders.Offer(decoders.SHTTemperatureMin, decoders.Celsius),
+		decoders.Offer(decoders.SHTTemperatureMax, decoders.Celsius),
+		decoders.Offer(decoders.SHTHumidityMin, decoders.Percent),
+		decoders.Offer(decoders.SHTHumidityMax, decoders.Percent),
 	}
 }
 
