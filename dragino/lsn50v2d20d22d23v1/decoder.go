@@ -10,22 +10,69 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lsn50v2-d20-d22-d23", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lsn50v2-d20-d22-d23", "v1", decoders.New(Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TempRed, decoders.Celsius),
+		decoders.Offer(decoders.TempWhite, decoders.Celsius),
+		decoders.Offer(decoders.TempBlack, decoders.Celsius),
+		decoders.Offer(decoders.TempRedMin, decoders.Celsius),
+		decoders.Offer(decoders.TempRedMax, decoders.Celsius),
+		decoders.Offer(decoders.TempWhiteMin, decoders.Celsius),
+		decoders.Offer(decoders.TempWhiteMax, decoders.Celsius),
+		decoders.Offer(decoders.TempBlackMin, decoders.Celsius),
+		decoders.Offer(decoders.TempBlackMax, decoders.Celsius),
+	))
 }
 
 type Data struct {
-	WorkMode    string   `json:"work_mode"`
-	BatV        *float64 `json:"bat_v,omitempty"`
-	AlarmStatus *bool    `json:"alarm_status,omitempty"`
-	TempRed     any      `json:"temp_red,omitempty"`
-	TempWhite   any      `json:"temp_white,omitempty"`
-	TempBlack   any      `json:"temp_black,omitempty"`
-	TempRedMin  *int8    `json:"temp_red_min,omitempty"`
-	TempRedMax  *int8    `json:"temp_red_max,omitempty"`
-	TempWhiteMin *int8   `json:"temp_white_min,omitempty"`
-	TempWhiteMax *int8   `json:"temp_white_max,omitempty"`
-	TempBlackMin *int8   `json:"temp_black_min,omitempty"`
-	TempBlackMax *int8   `json:"temp_black_max,omitempty"`
+	WorkMode     string   `json:"work_mode"`
+	BatV         *float64 `json:"bat_v,omitempty"`
+	AlarmStatus  *bool    `json:"alarm_status,omitempty"`
+	TempRed      any      `json:"temp_red,omitempty"`
+	TempWhite    any      `json:"temp_white,omitempty"`
+	TempBlack    any      `json:"temp_black,omitempty"`
+	TempRedMin   *int8    `json:"temp_red_min,omitempty"`
+	TempRedMax   *int8    `json:"temp_red_max,omitempty"`
+	TempWhiteMin *int8    `json:"temp_white_min,omitempty"`
+	TempWhiteMax *int8    `json:"temp_white_max,omitempty"`
+	TempBlackMin *int8    `json:"temp_black_min,omitempty"`
+	TempBlackMax *int8    `json:"temp_black_max,omitempty"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	var measurements []decoders.Measurement
+	measurements = decoders.AppendFloat(measurements, decoders.BatteryVoltage, decoders.Volt, d.BatV)
+	measurements = appendAnyFloat(measurements, decoders.TempRed, decoders.Celsius, d.TempRed)
+	measurements = appendAnyFloat(measurements, decoders.TempWhite, decoders.Celsius, d.TempWhite)
+	measurements = appendAnyFloat(measurements, decoders.TempBlack, decoders.Celsius, d.TempBlack)
+	if d.TempRedMin != nil {
+		measurements = append(measurements, decoders.Int(decoders.TempRedMin, decoders.Celsius, int(*d.TempRedMin)))
+	}
+	if d.TempRedMax != nil {
+		measurements = append(measurements, decoders.Int(decoders.TempRedMax, decoders.Celsius, int(*d.TempRedMax)))
+	}
+	if d.TempWhiteMin != nil {
+		measurements = append(measurements, decoders.Int(decoders.TempWhiteMin, decoders.Celsius, int(*d.TempWhiteMin)))
+	}
+	if d.TempWhiteMax != nil {
+		measurements = append(measurements, decoders.Int(decoders.TempWhiteMax, decoders.Celsius, int(*d.TempWhiteMax)))
+	}
+	if d.TempBlackMin != nil {
+		measurements = append(measurements, decoders.Int(decoders.TempBlackMin, decoders.Celsius, int(*d.TempBlackMin)))
+	}
+	if d.TempBlackMax != nil {
+		measurements = append(measurements, decoders.Int(decoders.TempBlackMax, decoders.Celsius, int(*d.TempBlackMax)))
+	}
+	return measurements
+}
+
+func appendAnyFloat(dst []decoders.Measurement, name, unit string, v any) []decoders.Measurement {
+	if f, ok := v.(float64); ok {
+		return append(dst, decoders.Float(name, unit, f))
+	}
+	return dst
 }
 
 func ptr[T any](v T) *T { return &v }

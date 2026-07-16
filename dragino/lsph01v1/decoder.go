@@ -9,7 +9,14 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lsph01", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lsph01", "v1", decoders.New(Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.DSTemperature, decoders.Celsius),
+		decoders.Offer(decoders.SoilPH, ""),
+		decoders.Offer(decoders.SoilTemp, decoders.Celsius),
+		decoders.Offer(decoders.InterruptFlag, ""),
+		decoders.Offer(decoders.MessageType, ""),
+	))
 }
 
 type Data struct {
@@ -19,6 +26,19 @@ type Data struct {
 	TempSoil      float64 `json:"temp_soil"`
 	InterruptFlag int     `json:"interrupt_flag"`
 	MessageType   int     `json:"message_type"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.DSTemperature, decoders.Celsius, d.TempCDS18B20),
+		decoders.Float(decoders.SoilPH, "", d.PH1Soil),
+		decoders.Float(decoders.SoilTemp, decoders.Celsius, d.TempSoil),
+		decoders.Int(decoders.InterruptFlag, "", d.InterruptFlag),
+		decoders.Int(decoders.MessageType, "", d.MessageType),
+	}
 }
 
 func round(v float64, places int) float64 {

@@ -12,22 +12,56 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lbt1", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lbt1", "v1", decoders.New(
+		Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Major, ""),
+		decoders.Offer(decoders.Minor, ""),
+		decoders.Offer(decoders.RSSI, decoders.DecibelMilliwatt),
+		decoders.Offer(decoders.Power, decoders.DecibelMilliwatt),
+		decoders.Offer(decoders.StepCount, decoders.Count),
+		decoders.Offer(decoders.Alarm, ""),
+	))
 }
 
 type Data struct {
-	UUID               string `json:"uuid"`
-	ADDR               string `json:"addr"`
-	Major              int    `json:"major"`
-	Minor              int    `json:"minor"`
-	RSSI               any    `json:"rssi"`
-	Power              any    `json:"power"`
-	DeviceInformation1 string `json:"device_information1"`
-	DeviceInformation2 string `json:"device_information2"`
-	DeviceInformation3 string `json:"device_information3"`
-	StepCount          int    `json:"step_count"`
-	Alarm              int    `json:"alarm"`
+	UUID               string  `json:"uuid"`
+	ADDR               string  `json:"addr"`
+	Major              int     `json:"major"`
+	Minor              int     `json:"minor"`
+	RSSI               any     `json:"rssi"`
+	Power              any     `json:"power"`
+	DeviceInformation1 string  `json:"device_information1"`
+	DeviceInformation2 string  `json:"device_information2"`
+	DeviceInformation3 string  `json:"device_information3"`
+	StepCount          int     `json:"step_count"`
+	Alarm              int     `json:"alarm"`
 	BatV               float64 `json:"bat_v"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Int(decoders.Major, "", d.Major),
+		decoders.Int(decoders.Minor, "", d.Minor),
+		decoders.Int(decoders.StepCount, decoders.Count, d.StepCount),
+		decoders.Int(decoders.Alarm, "", d.Alarm),
+	}
+	switch v := d.RSSI.(type) {
+	case int:
+		ms = append(ms, decoders.Int(decoders.RSSI, decoders.DecibelMilliwatt, v))
+	case float64:
+		ms = append(ms, decoders.Float(decoders.RSSI, decoders.DecibelMilliwatt, v))
+	}
+	switch v := d.Power.(type) {
+	case int:
+		ms = append(ms, decoders.Int(decoders.Power, decoders.DecibelMilliwatt, v))
+	case float64:
+		ms = append(ms, decoders.Float(decoders.Power, decoders.DecibelMilliwatt, v))
+	}
+	return ms
 }
 
 func Decode(u decoders.Uplink) (any, error) {

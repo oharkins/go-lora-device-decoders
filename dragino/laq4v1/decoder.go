@@ -9,7 +9,14 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "laq4", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "laq4", "v1", decoders.New(
+		Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TVOCPPB, decoders.PPB),
+		decoders.Offer(decoders.CO2PPM, decoders.PPM),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+	))
 }
 
 type Data struct {
@@ -26,6 +33,19 @@ type Data struct {
 	SHTHumMax  *uint8   `json:"sht_hum_max,omitempty"`
 	CO2Min     *int     `json:"co2_min,omitempty"`
 	CO2Max     *int     `json:"co2_max,omitempty"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+	}
+	ms = decoders.AppendInt(ms, decoders.TVOCPPB, decoders.PPB, d.TVOCPPB)
+	ms = decoders.AppendInt(ms, decoders.CO2PPM, decoders.PPM, d.CO2PPM)
+	ms = decoders.AppendFloat(ms, decoders.Temperature, decoders.Celsius, d.TempCSHT)
+	ms = decoders.AppendFloat(ms, decoders.Humidity, decoders.Percent, d.HumSHT)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }

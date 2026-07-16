@@ -9,29 +9,71 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lht65n-vib", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lht65n-vib", "v1", decoders.New(Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.VibrationCount, decoders.Count),
+		decoders.Offer(decoders.WorkMinutes, decoders.Minute),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+		decoders.Offer(decoders.AccelerationX, decoders.GForce),
+		decoders.Offer(decoders.AccelerationY, decoders.GForce),
+		decoders.Offer(decoders.AccelerationZ, decoders.GForce),
+		decoders.Offer(decoders.MaxAccelerationX, decoders.GForce),
+		decoders.Offer(decoders.MaxAccelerationY, decoders.GForce),
+		decoders.Offer(decoders.MaxAccelerationZ, decoders.GForce),
+	))
 }
 
 // Data is the decoded payload for FPort 2 (vibration data).
 type Data struct {
-	NodeType  string   `json:"node_type"`
-	BatV      float64  `json:"bat_v"`
-	Mod       int      `json:"mod"`
-	VibCount  *uint32  `json:"vib_count,omitempty"`
-	WorkMin   *uint32  `json:"work_min,omitempty"`
-	TempCSHT  *float64 `json:"temp_c_sht,omitempty"`
-	HumSHT    *float64 `json:"hum_sht,omitempty"`
-	Alarm     string   `json:"alarm"`
-	TDC       string   `json:"tdc"`
+	NodeType string   `json:"node_type"`
+	BatV     float64  `json:"bat_v"`
+	Mod      int      `json:"mod"`
+	VibCount *uint32  `json:"vib_count,omitempty"`
+	WorkMin  *uint32  `json:"work_min,omitempty"`
+	TempCSHT *float64 `json:"temp_c_sht,omitempty"`
+	HumSHT   *float64 `json:"hum_sht,omitempty"`
+	Alarm    string   `json:"alarm"`
+	TDC      string   `json:"tdc"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+// Measurements returns the numeric readings decoded from this uplink.
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+	}
+	if d.VibCount != nil {
+		ms = append(ms, decoders.Measurement{Name: decoders.VibrationCount, Unit: decoders.Count, Value: float64(*d.VibCount), Valid: true})
+	}
+	if d.WorkMin != nil {
+		ms = append(ms, decoders.Measurement{Name: decoders.WorkMinutes, Unit: decoders.Minute, Value: float64(*d.WorkMin), Valid: true})
+	}
+	ms = decoders.AppendFloat(ms, decoders.Temperature, decoders.Celsius, d.TempCSHT)
+	ms = decoders.AppendFloat(ms, decoders.Humidity, decoders.Percent, d.HumSHT)
+	return ms
 }
 
 // AccelData is the decoded payload for FPort 9 (peak acceleration).
 type AccelData struct {
-	NodeType  string  `json:"node_type"`
-	BatV      float64 `json:"bat_v"`
-	MaxAccXG  float64 `json:"max_acc_x_g"`
-	MaxAccYG  float64 `json:"max_acc_y_g"`
-	MaxAccZG  float64 `json:"max_acc_z_g"`
+	NodeType string  `json:"node_type"`
+	BatV     float64 `json:"bat_v"`
+	MaxAccXG float64 `json:"max_acc_x_g"`
+	MaxAccYG float64 `json:"max_acc_y_g"`
+	MaxAccZG float64 `json:"max_acc_z_g"`
+}
+
+func (d *AccelData) MessageKind() decoders.Kind { return decoders.KindAccel }
+
+// Measurements returns the numeric readings decoded from this acceleration uplink.
+func (d *AccelData) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.MaxAccelerationX, decoders.GForce, d.MaxAccXG),
+		decoders.Float(decoders.MaxAccelerationY, decoders.GForce, d.MaxAccYG),
+		decoders.Float(decoders.MaxAccelerationZ, decoders.GForce, d.MaxAccZG),
+	}
 }
 
 // DeviceInfo is the decoded payload for FPort 5.
@@ -44,6 +86,15 @@ type DeviceInfo struct {
 	Bat             float64 `json:"bat"`
 }
 
+func (d *DeviceInfo) MessageKind() decoders.Kind { return decoders.KindDeviceInfo }
+
+// Measurements returns the numeric readings decoded from this device-info uplink.
+func (d *DeviceInfo) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.Bat),
+	}
+}
+
 // DatalogEntry holds one accelerometer record from the FPort 7 data log.
 type DatalogEntry struct {
 	AccXG float64 `json:"acc_x_g"`
@@ -51,11 +102,33 @@ type DatalogEntry struct {
 	AccZG float64 `json:"acc_z_g"`
 }
 
+// Measurements returns the numeric acceleration readings from this data-log entry.
+func (d DatalogEntry) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float(decoders.AccelerationX, decoders.GForce, d.AccXG),
+		decoders.Float(decoders.AccelerationY, decoders.GForce, d.AccYG),
+		decoders.Float(decoders.AccelerationZ, decoders.GForce, d.AccZG),
+	}
+}
+
 // DatalogData is the decoded FPort 7 payload.
 type DatalogData struct {
 	NodeType string         `json:"node_type"`
 	BatV     float64        `json:"bat_v"`
 	Datalog  []DatalogEntry `json:"datalog"`
+}
+
+func (d *DatalogData) MessageKind() decoders.Kind { return decoders.KindDatalog }
+
+// Measurements returns the numeric readings decoded from this data-log uplink.
+func (d *DatalogData) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+	}
+	for _, entry := range d.Datalog {
+		ms = append(ms, entry.Measurements()...)
+	}
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }

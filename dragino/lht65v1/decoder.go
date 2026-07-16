@@ -10,7 +10,15 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lht65", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lht65", "v1", decoders.New(Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+		decoders.Offer(decoders.ExternalTemp, decoders.Celsius),
+		decoders.Offer(decoders.Illumination, decoders.Lux),
+		decoders.Offer(decoders.ADCVoltage, decoders.Volt),
+		decoders.Offer(decoders.InterruptCount, decoders.Count),
+	))
 }
 
 var sensorTypes = map[byte]string{
@@ -38,6 +46,39 @@ type Data struct {
 	ADCVoltage             *float64 `json:"adc_voltage,omitempty"`
 	InterruptCount         *int     `json:"interrupt_count,omitempty"`
 	SensorConnectionStatus *string  `json:"sensor_connection_status,omitempty"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+// Measurements returns the numeric readings decoded from this uplink.
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatteryVoltage),
+		decoders.Float(decoders.Temperature, decoders.Celsius, d.Temperature),
+		decoders.Float(decoders.Humidity, decoders.Percent, d.Humidity),
+	}
+	ms = decoders.AppendFloat(ms, decoders.ExternalTemp, decoders.Celsius, d.ExternalTemperature)
+	ms = decoders.AppendInt(ms, decoders.Illumination, decoders.Lux, d.Illumination)
+	ms = decoders.AppendFloat(ms, decoders.ADCVoltage, decoders.Volt, d.ADCVoltage)
+	ms = decoders.AppendInt(ms, decoders.InterruptCount, decoders.Count, d.InterruptCount)
+	if d.SensorConnectionStatus != nil {
+		markNoConnection(ms, map[string]bool{
+			decoders.ExternalTemp:   true,
+			decoders.Illumination:   true,
+			decoders.ADCVoltage:     true,
+			decoders.InterruptCount: true,
+		})
+	}
+	return ms
+}
+
+func markNoConnection(ms []decoders.Measurement, names map[string]bool) {
+	for i := range ms {
+		if names[ms[i].Name] {
+			ms[i].Valid = false
+			ms[i].Quality = decoders.QualityNoConnection
+		}
+	}
 }
 
 func ptr[T any](v T) *T { return &v }

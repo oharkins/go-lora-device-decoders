@@ -9,7 +9,14 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "ltc2", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "ltc2", "v1", decoders.New(
+		Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TempChannel1, decoders.Celsius),
+		decoders.Offer(decoders.TempChannel2, decoders.Celsius),
+		decoders.Offer(decoders.Resistance1, decoders.Ohm),
+		decoders.Offer(decoders.Resistance2, decoders.Ohm),
+	))
 }
 
 type Data struct {
@@ -20,6 +27,19 @@ type Data struct {
 	ResChannel1  *float64 `json:"res_channel1,omitempty"`
 	ResChannel2  *float64 `json:"res_channel2,omitempty"`
 	SysTimestamp int64    `json:"sys_timestamp"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	ms := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+	}
+	ms = decoders.AppendFloat(ms, decoders.TempChannel1, decoders.Celsius, d.TempChannel1)
+	ms = decoders.AppendFloat(ms, decoders.TempChannel2, decoders.Celsius, d.TempChannel2)
+	ms = decoders.AppendFloat(ms, decoders.Resistance1, decoders.Ohm, d.ResChannel1)
+	ms = decoders.AppendFloat(ms, decoders.Resistance2, decoders.Ohm, d.ResChannel2)
+	return ms
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -36,7 +56,7 @@ func Decode(u decoders.Uplink) (any, error) {
 	}
 	pollStatus := (b[2] & 0x40) >> 6
 	if pollStatus != 0 {
-		return nil, nil
+		return nil, decoders.ErrIgnored
 	}
 	ext := int(b[2] & 0x0F)
 	d := &Data{

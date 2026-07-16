@@ -8,22 +8,45 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lgt92", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lgt92", "v1", decoders.New(
+		Decode,
+		decoders.Offer(decoders.Latitude, decoders.Degree),
+		decoders.Offer(decoders.Longitude, decoders.Degree),
+		decoders.Offer(decoders.Altitude, decoders.Meter),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Roll, decoders.Degree),
+		decoders.Offer(decoders.Pitch, decoders.Degree),
+		decoders.Offer(decoders.HDOP, ""),
+	))
 }
 
 type Data struct {
-	Latitude   float64 `json:"latitude"`
-	Longitude  float64 `json:"longitude"`
-	Altitude   float64 `json:"altitude"`
-	Accuracy   int     `json:"accuracy"`
-	Roll       float64 `json:"roll"`
-	Pitch      float64 `json:"pitch"`
-	BatV       float64 `json:"bat_v"`
-	AlarmStatus string `json:"alarm_status"`
-	MotionMode  string `json:"motion_mode"`
-	LEDUpDown   string `json:"led_updown"`
-	Firmware    int    `json:"firmware"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	Altitude    float64 `json:"altitude"`
+	Accuracy    int     `json:"accuracy"`
+	Roll        float64 `json:"roll"`
+	Pitch       float64 `json:"pitch"`
+	BatV        float64 `json:"bat_v"`
+	AlarmStatus string  `json:"alarm_status"`
+	MotionMode  string  `json:"motion_mode"`
+	LEDUpDown   string  `json:"led_updown"`
+	Firmware    int     `json:"firmware"`
 	HDOP        float64 `json:"hdop"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float(decoders.Latitude, decoders.Degree, d.Latitude),
+		decoders.Float(decoders.Longitude, decoders.Degree, d.Longitude),
+		decoders.Float(decoders.Altitude, decoders.Meter, d.Altitude),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.Roll, decoders.Degree, d.Roll),
+		decoders.Float(decoders.Pitch, decoders.Degree, d.Pitch),
+		decoders.Float(decoders.HDOP, "", d.HDOP),
+	}
 }
 
 func Decode(u decoders.Uplink) (any, error) {

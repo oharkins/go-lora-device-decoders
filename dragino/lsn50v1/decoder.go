@@ -9,7 +9,19 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lsn50", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lsn50", "v1", decoders.New(Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.TemperatureProbe, decoders.Celsius),
+		decoders.Offer(decoders.ADCCH0Voltage, decoders.Volt),
+		decoders.Offer(decoders.ADCCH1Voltage, decoders.Volt),
+		decoders.Offer(decoders.ADCCH4Voltage, decoders.Volt),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+		decoders.Offer(decoders.DistanceCM, decoders.Centimeter),
+		decoders.Offer(decoders.Temperature2, decoders.Celsius),
+		decoders.Offer(decoders.Temperature3, decoders.Celsius),
+		decoders.Offer(decoders.Weight, decoders.Gram),
+	))
 }
 
 type Data struct {
@@ -30,6 +42,25 @@ type Data struct {
 	Weight         *int     `json:"weight,omitempty"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	measurements := []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+	}
+	measurements = decoders.AppendFloat(measurements, decoders.TemperatureProbe, decoders.Celsius, d.TempC1)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH0Voltage, decoders.Volt, d.ADCCH0V)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH1Voltage, decoders.Volt, d.ADCCH1V)
+	measurements = decoders.AppendFloat(measurements, decoders.ADCCH4Voltage, decoders.Volt, d.ADCCH4V)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature, decoders.Celsius, d.TempCSHT)
+	measurements = decoders.AppendFloat(measurements, decoders.Humidity, decoders.Percent, d.HumSHT)
+	measurements = decoders.AppendFloat(measurements, decoders.DistanceCM, decoders.Centimeter, d.Distance)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature2, decoders.Celsius, d.TempC2)
+	measurements = decoders.AppendFloat(measurements, decoders.Temperature3, decoders.Celsius, d.TempC3)
+	measurements = decoders.AppendInt(measurements, decoders.Weight, decoders.Gram, d.Weight)
+	return measurements
+}
+
 func ptr[T any](v T) *T { return &v }
 
 func round(v float64, places int) float64 {
@@ -47,6 +78,9 @@ func Decode(u decoders.Uplink) (any, error) {
 		return nil, fmt.Errorf("lsn50v1: payload too short: %d bytes (want >= 11)", len(b))
 	}
 	mode := (b[6] & 0x7C) >> 2
+	if mode == 2 && len(b) < 12 {
+		return nil, fmt.Errorf("lsn50v1: payload too short: %d bytes (want >= 12 for mode 2)", len(b))
+	}
 	d := &Data{}
 
 	switch mode {

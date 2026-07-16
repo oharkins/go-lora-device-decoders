@@ -1,6 +1,7 @@
 package lht65v1_test
 
 import (
+	"reflect"
 	"testing"
 
 	decoders "github.com/oharkins/go-lora-device-decoders"
@@ -39,6 +40,22 @@ func TestDecodeBuiltIn(t *testing.T) {
 	}
 	if d.ExternalTemperature == nil || *d.ExternalTemperature != 25.00 {
 		t.Errorf("external_temperature = %v, want 25.00", d.ExternalTemperature)
+	}
+}
+
+func TestMeasurementsBuiltIn(t *testing.T) {
+	payload := []byte{0x0B, 0xF2, 0x08, 0xDF, 0x02, 0x32, 0x01, 0x09, 0xC4}
+	d := decode(t, payload)
+
+	got := d.Measurements()
+	want := []decoders.Measurement{
+		decoders.Float("battery_voltage", "V", 3.058),
+		decoders.Float("temperature", "C", 22.71),
+		decoders.Float("humidity", "%", 56.2),
+		decoders.Float("external_temperature", "C", 25.00),
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Measurements() = %#v, want %#v", got, want)
 	}
 }
 

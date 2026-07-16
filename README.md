@@ -12,6 +12,8 @@ go get github.com/oharkins/go-lora-device-decoders
 
 ```go
 import (
+    "errors"
+
     decoders "github.com/oharkins/go-lora-device-decoders"
     _ "github.com/oharkins/go-lora-device-decoders/all" // register all decoders
 )
@@ -21,11 +23,24 @@ func handle(fport uint8, payload []byte) error {
         FPort:   fport,
         Payload: payload,
     })
+    if errors.Is(err, decoders.ErrIgnored) {
+        return nil // config/status frame — not telemetry
+    }
     if err != nil {
         return err
     }
-    // v is *lht65v1.Data — JSON-marshalable, or type-assert for typed access
-    _ = v
+    switch decoders.KindOf(v) {
+    case decoders.KindTelemetry:
+        ms, _ := decoders.MeasurementsOf(v)
+        for _, m := range ms {
+            if !m.Valid {
+                continue // m.Quality explains fault / no_sensor / etc.
+            }
+            _ = m // Name, Value, Unit
+        }
+    default:
+        // device_info, datalog, acceleration — route separately
+    }
     return nil
 }
 ```
@@ -40,7 +55,25 @@ Dynamic lookup (e.g. device type from a device registry):
 
 ```go
 d, ok := decoders.Get(dev.Manufacturer, dev.Product, dev.Version)
+offers, _ := decoders.Offers(dev.Manufacturer, dev.Product, dev.Version)
+// offers lists measurement names/units this decoder can produce
+_ = d
+_ = offers
 ```
+
+### Pipeline interfaces
+
+Every registered decoder implements:
+
+- `Decode(Uplink) (any, error)` — typed payload (or `ErrIgnored`)
+- `Offers() []Offering` — measurements the device can produce (discoverable before decode)
+
+Decoded payloads may also implement:
+
+- `Message` (`MessageKind() Kind`) — routes decoded values as `telemetry`, `device_info`, `datalog`, or `acceleration`. Values that do not implement `Message` default to `KindTelemetry` via `KindOf`.
+- `Measured` (`Measurements() []Measurement`) — exposes readings without per-device type switches. `Measurement.Valid` defaults to true when created with helpers such as `Float`/`Int`; when false, `Quality` gives the reason (for example `fault`, `no_sensor`, or `out_of_range`).
+
+JSON field names on `Data` stay device-native. `Measurement.Name` and `Offering.Name` should use the canonical constants in `names.go` where available (for example `BatteryVoltage`, `BatteryPercent`, `Temperature`, `CurrentMA`, `DistanceMM`, and `Value`) so pipeline schemas remain stable across devices.
 
 ### Configurable decoders (e.g. Vega TP-11)
 
@@ -175,14 +208,18 @@ All subtests are named after the `name` field so failures are easy to trace back
 
 1. Create `<manufacturer>/<product>/decoder.go`.
 2. Define a typed `Data` struct with JSON tags; use pointer fields + `omitempty` for optional fields.
-3. Implement `Decode(decoders.Uplink) (any, error)` with a minimum payload length check.
-4. Register in `init()`:
+3. Implement `Decode(decoders.Uplink) (any, error)` with a minimum payload length check. Return `decoders.ErrIgnored` for non-telemetry frames.
+4. Implement `Measurements() []decoders.Measurement` on telemetry payloads.
+5. Register in `init()` with declared offerings:
 
    ```go
    func init() {
-       decoders.Register("acme", "widget", "v1", decoders.DecoderFunc(Decode))
+       decoders.Register("acme", "widget", "v1", decoders.New(Decode,
+           decoders.Offer("battery_voltage", "V"),
+           decoders.Offer("temperature", "C"),
+       ))
    }
    ```
 
-5. Add the blank import to `all/all.go`.
-6. Add a `decoder_test.go` following the table-driven pattern above.
+6. Add the blank import to `all/all.go`.
+7. Add a `decoder_test.go` following the table-driven pattern above.

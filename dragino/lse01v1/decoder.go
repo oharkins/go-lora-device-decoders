@@ -9,7 +9,13 @@ import (
 )
 
 func init() {
-	decoders.Register("dragino", "lse01", "v1", decoders.DecoderFunc(Decode))
+	decoders.Register("dragino", "lse01", "v1", decoders.New(Decode,
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.DSTemperature, decoders.Celsius),
+		decoders.Offer(decoders.SoilMoisture, decoders.Percent),
+		decoders.Offer(decoders.SoilTemp, decoders.Celsius),
+		decoders.Offer(decoders.SoilConductivity, decoders.MicroSiemens),
+	))
 }
 
 type Data struct {
@@ -18,6 +24,18 @@ type Data struct {
 	WaterSoil    float64 `json:"water_soil"`
 	TempSoil     float64 `json:"temp_soil"`
 	ConductSoil  float64 `json:"conduct_soil"`
+}
+
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
+func (d *Data) Measurements() []decoders.Measurement {
+	return []decoders.Measurement{
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.DSTemperature, decoders.Celsius, d.TempCDS18B20),
+		decoders.Float(decoders.SoilMoisture, decoders.Percent, d.WaterSoil),
+		decoders.Float(decoders.SoilTemp, decoders.Celsius, d.TempSoil),
+		decoders.Float(decoders.SoilConductivity, decoders.MicroSiemens, d.ConductSoil),
+	}
 }
 
 func round(v float64, places int) float64 {
