@@ -10,17 +10,17 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lht65n-vib", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("vibration_count", "count"),
-		decoders.Offer("work_minutes", "min"),
-		decoders.Offer("temperature", "C"),
-		decoders.Offer("humidity", "%"),
-		decoders.Offer("acceleration_x", "g"),
-		decoders.Offer("acceleration_y", "g"),
-		decoders.Offer("acceleration_z", "g"),
-		decoders.Offer("max_acceleration_x", "g"),
-		decoders.Offer("max_acceleration_y", "g"),
-		decoders.Offer("max_acceleration_z", "g"),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.VibrationCount, decoders.Count),
+		decoders.Offer(decoders.WorkMinutes, decoders.Minute),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+		decoders.Offer(decoders.AccelerationX, decoders.GForce),
+		decoders.Offer(decoders.AccelerationY, decoders.GForce),
+		decoders.Offer(decoders.AccelerationZ, decoders.GForce),
+		decoders.Offer(decoders.MaxAccelerationX, decoders.GForce),
+		decoders.Offer(decoders.MaxAccelerationY, decoders.GForce),
+		decoders.Offer(decoders.MaxAccelerationZ, decoders.GForce),
 	))
 }
 
@@ -37,19 +37,21 @@ type Data struct {
 	TDC      string   `json:"tdc"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 // Measurements returns the numeric readings decoded from this uplink.
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
 	}
 	if d.VibCount != nil {
-		ms = append(ms, decoders.Measurement{Name: "vibration_count", Unit: "count", Value: float64(*d.VibCount)})
+		ms = append(ms, decoders.Measurement{Name: decoders.VibrationCount, Unit: decoders.Count, Value: float64(*d.VibCount), Valid: true})
 	}
 	if d.WorkMin != nil {
-		ms = append(ms, decoders.Measurement{Name: "work_minutes", Unit: "min", Value: float64(*d.WorkMin)})
+		ms = append(ms, decoders.Measurement{Name: decoders.WorkMinutes, Unit: decoders.Minute, Value: float64(*d.WorkMin), Valid: true})
 	}
-	ms = decoders.AppendFloat(ms, "temperature", "C", d.TempCSHT)
-	ms = decoders.AppendFloat(ms, "humidity", "%", d.HumSHT)
+	ms = decoders.AppendFloat(ms, decoders.Temperature, decoders.Celsius, d.TempCSHT)
+	ms = decoders.AppendFloat(ms, decoders.Humidity, decoders.Percent, d.HumSHT)
 	return ms
 }
 
@@ -62,13 +64,15 @@ type AccelData struct {
 	MaxAccZG float64 `json:"max_acc_z_g"`
 }
 
+func (d *AccelData) MessageKind() decoders.Kind { return decoders.KindAccel }
+
 // Measurements returns the numeric readings decoded from this acceleration uplink.
 func (d *AccelData) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
-		decoders.Float("max_acceleration_x", "g", d.MaxAccXG),
-		decoders.Float("max_acceleration_y", "g", d.MaxAccYG),
-		decoders.Float("max_acceleration_z", "g", d.MaxAccZG),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
+		decoders.Float(decoders.MaxAccelerationX, decoders.GForce, d.MaxAccXG),
+		decoders.Float(decoders.MaxAccelerationY, decoders.GForce, d.MaxAccYG),
+		decoders.Float(decoders.MaxAccelerationZ, decoders.GForce, d.MaxAccZG),
 	}
 }
 
@@ -82,10 +86,12 @@ type DeviceInfo struct {
 	Bat             float64 `json:"bat"`
 }
 
+func (d *DeviceInfo) MessageKind() decoders.Kind { return decoders.KindDeviceInfo }
+
 // Measurements returns the numeric readings decoded from this device-info uplink.
 func (d *DeviceInfo) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.Bat),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.Bat),
 	}
 }
 
@@ -99,9 +105,9 @@ type DatalogEntry struct {
 // Measurements returns the numeric acceleration readings from this data-log entry.
 func (d DatalogEntry) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("acceleration_x", "g", d.AccXG),
-		decoders.Float("acceleration_y", "g", d.AccYG),
-		decoders.Float("acceleration_z", "g", d.AccZG),
+		decoders.Float(decoders.AccelerationX, decoders.GForce, d.AccXG),
+		decoders.Float(decoders.AccelerationY, decoders.GForce, d.AccYG),
+		decoders.Float(decoders.AccelerationZ, decoders.GForce, d.AccZG),
 	}
 }
 
@@ -112,10 +118,12 @@ type DatalogData struct {
 	Datalog  []DatalogEntry `json:"datalog"`
 }
 
+func (d *DatalogData) MessageKind() decoders.Kind { return decoders.KindDatalog }
+
 // Measurements returns the numeric readings decoded from this data-log uplink.
 func (d *DatalogData) Measurements() []decoders.Measurement {
 	ms := []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.BatV),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.BatV),
 	}
 	for _, entry := range d.Datalog {
 		ms = append(ms, entry.Measurements()...)

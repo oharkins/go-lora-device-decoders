@@ -11,19 +11,19 @@ import (
 
 func init() {
 	decoders.Register("dragino", "lht65n-pir", "v1", decoders.New(Decode,
-		decoders.Offer("battery_voltage", "V"),
-		decoders.Offer("temperature", "C"),
-		decoders.Offer("humidity", "%"),
-		decoders.Offer("ds_temperature", "C"),
-		decoders.Offer("tmp117_temperature", "C"),
-		decoders.Offer("exti_count", "count"),
-		decoders.Offer("exti_duration", "s"),
-		decoders.Offer("move_count", "count"),
-		decoders.Offer("illumination", "lx"),
-		decoders.Offer("adc_voltage", "V"),
-		decoders.Offer("system_timestamp", "s"),
-		decoders.Offer("external_temperature", "C"),
-		decoders.Offer("external_humidity", "%"),
+		decoders.Offer(decoders.BatteryVoltage, decoders.Volt),
+		decoders.Offer(decoders.Temperature, decoders.Celsius),
+		decoders.Offer(decoders.Humidity, decoders.Percent),
+		decoders.Offer(decoders.DSTemperature, decoders.Celsius),
+		decoders.Offer(decoders.TMP117Temp, decoders.Celsius),
+		decoders.Offer(decoders.ExtiCount, decoders.Count),
+		decoders.Offer(decoders.ExtiDuration, decoders.Second),
+		decoders.Offer(decoders.MoveCount, decoders.Count),
+		decoders.Offer(decoders.Illumination, decoders.Lux),
+		decoders.Offer(decoders.ADCVoltage, decoders.Volt),
+		decoders.Offer(decoders.SystemTimestamp, decoders.Second),
+		decoders.Offer(decoders.ExternalTemp, decoders.Celsius),
+		decoders.Offer(decoders.ExternalHumidity, decoders.Percent),
 	))
 }
 
@@ -51,22 +51,37 @@ type Data struct {
 	ID           string   `json:"id,omitempty"`
 }
 
+func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
+
 // Measurements returns the numeric readings decoded from this uplink.
 func (d *Data) Measurements() []decoders.Measurement {
 	ms := make([]decoders.Measurement, 0, 13)
-	ms = decoders.AppendFloat(ms, "battery_voltage", "V", d.BatV)
-	ms = decoders.AppendFloat(ms, "temperature", "C", d.TempCSHT)
-	ms = decoders.AppendFloat(ms, "humidity", "%", d.HumSHT)
-	ms = decoders.AppendFloat(ms, "ds_temperature", "C", d.TempCDS)
-	ms = decoders.AppendFloat(ms, "tmp117_temperature", "C", d.TempCTMP117)
-	ms = decoders.AppendInt64(ms, "exti_count", "count", d.ExitCount)
-	ms = decoders.AppendInt(ms, "exti_duration", "s", d.ExitDuration)
-	ms = decoders.AppendInt(ms, "move_count", "count", d.MoveCount)
-	ms = decoders.AppendInt(ms, "illumination", "lx", d.ILLLx)
-	ms = decoders.AppendFloat(ms, "adc_voltage", "V", d.ADCV)
-	ms = decoders.AppendInt64(ms, "system_timestamp", "s", d.SysTimestamp)
-	ms = decoders.AppendFloat(ms, "external_temperature", "C", d.ExtTempCSHT)
-	ms = decoders.AppendFloat(ms, "external_humidity", "%", d.ExtHumSHT)
+	ms = decoders.AppendFloat(ms, decoders.BatteryVoltage, decoders.Volt, d.BatV)
+	ms = decoders.AppendFloat(ms, decoders.Temperature, decoders.Celsius, d.TempCSHT)
+	ms = decoders.AppendFloat(ms, decoders.Humidity, decoders.Percent, d.HumSHT)
+	ms = decoders.AppendFloat(ms, decoders.DSTemperature, decoders.Celsius, d.TempCDS)
+	ms = decoders.AppendFloat(ms, decoders.TMP117Temp, decoders.Celsius, d.TempCTMP117)
+	ms = decoders.AppendInt64(ms, decoders.ExtiCount, decoders.Count, d.ExitCount)
+	ms = decoders.AppendInt(ms, decoders.ExtiDuration, decoders.Second, d.ExitDuration)
+	ms = decoders.AppendInt(ms, decoders.MoveCount, decoders.Count, d.MoveCount)
+	ms = decoders.AppendInt(ms, decoders.Illumination, decoders.Lux, d.ILLLx)
+	ms = decoders.AppendFloat(ms, decoders.ADCVoltage, decoders.Volt, d.ADCV)
+	ms = decoders.AppendInt64(ms, decoders.SystemTimestamp, decoders.Second, d.SysTimestamp)
+	ms = decoders.AppendFloat(ms, decoders.ExternalTemp, decoders.Celsius, d.ExtTempCSHT)
+	ms = decoders.AppendFloat(ms, decoders.ExternalHumidity, decoders.Percent, d.ExtHumSHT)
+	if d.NoConnect != "" {
+		markNoConnection(ms, map[string]bool{
+			decoders.DSTemperature:    true,
+			decoders.TMP117Temp:       true,
+			decoders.ExtiCount:        true,
+			decoders.ExtiDuration:     true,
+			decoders.MoveCount:        true,
+			decoders.Illumination:     true,
+			decoders.ADCVoltage:       true,
+			decoders.ExternalTemp:     true,
+			decoders.ExternalHumidity: true,
+		})
+	}
 	return ms
 }
 
@@ -79,10 +94,31 @@ type DeviceInfo struct {
 	Bat             float64 `json:"bat"`
 }
 
+func (d *DeviceInfo) MessageKind() decoders.Kind { return decoders.KindDeviceInfo }
+
 // Measurements returns the numeric readings decoded from this device-info uplink.
 func (d *DeviceInfo) Measurements() []decoders.Measurement {
 	return []decoders.Measurement{
-		decoders.Float("battery_voltage", "V", d.Bat),
+		decoders.Float(decoders.BatteryVoltage, decoders.Volt, d.Bat),
+	}
+}
+
+type DatalogAck struct {
+	NodeType string `json:"node_type"`
+	Datalog  bool   `json:"datalog"`
+}
+
+func (DatalogAck) MessageKind() decoders.Kind { return decoders.KindDatalog }
+func (DatalogAck) Measurements() []decoders.Measurement {
+	return nil
+}
+
+func markNoConnection(ms []decoders.Measurement, names map[string]bool) {
+	for i := range ms {
+		if names[ms[i].Name] {
+			ms[i].Valid = false
+			ms[i].Quality = decoders.QualityNoConnection
+		}
 	}
 }
 
@@ -188,12 +224,13 @@ func Decode(u decoders.Uplink) (any, error) {
 		return nil, fmt.Errorf("lht65npirv1: payload too short: %d bytes (want >= 11)", len(b))
 	}
 
-	ext := b[6]
-	pollStatus := (b[6] >> 6) & 0x03
-	connect := (b[6] & 0x80) >> 7
+	rawExt := b[6]
+	ext := rawExt & 0x3F
+	pollStatus := (rawExt >> 6) & 0x01
+	connect := (rawExt & 0x80) >> 7
 
 	if pollStatus != 0 {
-		return map[string]any{"node_type": "LHT65N-PIR", "datalog": true}, nil
+		return &DatalogAck{NodeType: "LHT65N-PIR", Datalog: true}, nil
 	}
 
 	d := &Data{NodeType: "LHT65N-PIR"}
