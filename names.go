@@ -110,6 +110,11 @@ const (
 	Count1                 = "count_1"
 	Count2                 = "count_2"
 	CountA                 = "count_a"
+	DigitalInput           = "digital_input"
+	PulseCount             = "pulse_count"
+	WaterConsumption       = "water_consumption"
+	LiquidStatus           = "liquid_status"
+	CalibrationStatus      = "calibration_status"
 )
 
 // Canonical units.

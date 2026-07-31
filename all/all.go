@@ -32,5 +32,6 @@ import (
 	_ "github.com/oharkins/go-lora-device-decoders/dragino/ltc2v1"
 	_ "github.com/oharkins/go-lora-device-decoders/dragino/lwl01v1"
 	_ "github.com/oharkins/go-lora-device-decoders/dragino/lwl02v1"
+	_ "github.com/oharkins/go-lora-device-decoders/milesight/em300v1"
 	_ "github.com/oharkins/go-lora-device-decoders/vega/tp-11"
 )
