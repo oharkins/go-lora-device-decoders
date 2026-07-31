@@ -139,6 +139,13 @@ Registered key strings are lowercase: `dragino/lht65/v1`.
 | Dragino | LTC2 | v1 | `dragino/ltc2v1` | Dual-channel temp / resistance |
 | Dragino | LWL01 | v1 | `dragino/lwl01v1` | Door / water leak |
 | Dragino | LWL02 | v1 | `dragino/lwl02v1` | Door / water leak |
+| Milesight | EM300-TH | v1 | `milesight/em300v1` | Temp / humidity |
+| Milesight | EM300-MCS | v1 | `milesight/em300v1` | Magnet switch |
+| Milesight | EM300-SLD | v1 | `milesight/em300v1` | Spot leak detection |
+| Milesight | EM300-ZLD | v1 | `milesight/em300v1` | Zone leak detection |
+| Milesight | EM300-MLD | v1 | `milesight/em300v1` | Membrane leak detection |
+| Milesight | EM300-DI | v1 | `milesight/em300v1` | Pulse counter / digital input |
+| Milesight | EM300-CL | v1 | `milesight/em300v1` | Capacitive liquid level |
 | Vega | TP-11 | v1 | `vega/tp-11` | 4-20 mA transmitter (raw mA) |
 
 ---
