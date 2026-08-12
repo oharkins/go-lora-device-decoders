@@ -13,9 +13,14 @@
 //	milesight/em300-di/v1   pulse counter / digital input
 //	milesight/em300-cl/v1   capacitive liquid level
 //
-// Basic-information frames (channel ff) decode to *DeviceInfo (KindDeviceInfo),
-// historical-data frames (20ce / 21ce) to *DatalogData (KindDatalog), and data
-// enquiry replies (fc6b / fc6c) return ErrIgnored.
+// EM300-DI channel layouts follow the official Milesight decoder
+// (https://github.com/Milesight-IoT/SensorDecoders/tree/main/em-series/em300-di).
+//
+// Basic-information frames (channel ff) decode to *DeviceInfo (KindDeviceInfo).
+// Historical-data frames (20ce / 21ce) decode to *DatalogData (KindDatalog)
+// when they are the only content; when they share an uplink with telemetry they
+// are attached to *Data as History. Data enquiry replies (fc6b / fc6c) return
+// ErrIgnored.
 package em300v1
 
 import (
@@ -92,20 +97,21 @@ func offersFor(m Model) []decoders.Offering {
 // Data is a decoded EM300 telemetry uplink. Only channels present in the
 // payload are set.
 type Data struct {
-	Battery          *int     `json:"battery,omitempty"`            // %
-	Temperature      *float64 `json:"temperature,omitempty"`        // °C
-	Humidity         *float64 `json:"humidity,omitempty"`           // %RH
-	WaterLeak        *int     `json:"water_leak,omitempty"`         // 0 no leak, 1 leaked
-	MagnetStatus     *int     `json:"magnet_status,omitempty"`      // 0 close, 1 open
-	DigitalInput     *int     `json:"digital_input,omitempty"`      // 0 low, 1 high (EM300-DI)
-	PulseCount       *int64   `json:"pulse_count,omitempty"`        // EM300-DI counter (firmware <= V1.2)
-	WaterConv        *float64 `json:"water_conv,omitempty"`         // EM300-DI pulse conversion
-	PulseConv        *float64 `json:"pulse_conv,omitempty"`         // EM300-DI pulse conversion
-	WaterConsumption *float64 `json:"water_consumption,omitempty"`  // EM300-DI, unit per pulse conversion setting
-	LiquidStatus     *int     `json:"liquid_status,omitempty"`      // 0 uncalibrated, 1 full, 2 empty, 255 sensor error (EM300-CL)
-	Calibration      *int     `json:"calibration_status,omitempty"` // 0 failure, 1 success (EM300-CL)
-	Alarm            *int     `json:"alarm,omitempty"`              // 1 alarm, 0 alarm dismiss
-	AlarmType        *string  `json:"alarm_type,omitempty"`
+	Battery          *int           `json:"battery,omitempty"`            // %
+	Temperature      *float64       `json:"temperature,omitempty"`        // °C
+	Humidity         *float64       `json:"humidity,omitempty"`           // %RH
+	WaterLeak        *int           `json:"water_leak,omitempty"`         // 0 no leak, 1 leaked
+	MagnetStatus     *int           `json:"magnet_status,omitempty"`      // 0 close, 1 open
+	DigitalInput     *int           `json:"digital_input,omitempty"`      // 0 low, 1 high (EM300-DI)
+	PulseCount       *int64         `json:"pulse_count,omitempty"`        // EM300-DI counter (firmware <= V1.2)
+	WaterConv        *float64       `json:"water_conv,omitempty"`         // EM300-DI pulse conversion
+	PulseConv        *float64       `json:"pulse_conv,omitempty"`         // EM300-DI pulse conversion
+	WaterConsumption *float64       `json:"water_consumption,omitempty"`  // EM300-DI, unit per pulse conversion setting
+	LiquidStatus     *int           `json:"liquid_status,omitempty"`      // 0 uncalibrated, 1 full, 2 empty, 255 sensor error (EM300-CL)
+	Calibration      *int           `json:"calibration_status,omitempty"` // 0 failure, 1 success (EM300-CL)
+	Alarm            *int           `json:"alarm,omitempty"`              // 1 alarm, 0 alarm dismiss
+	AlarmType        *string        `json:"alarm_type,omitempty"`
+	History          []DatalogEntry `json:"history,omitempty"` // present when 20ce/21ce shares an uplink with telemetry
 }
 
 func (d *Data) MessageKind() decoders.Kind { return decoders.KindTelemetry }
@@ -140,8 +146,10 @@ type DeviceInfo struct {
 	ProtocolVersion string `json:"protocol_version,omitempty"`
 	HardwareVersion string `json:"hardware_version,omitempty"`
 	SoftwareVersion string `json:"software_version,omitempty"`
+	TslVersion      string `json:"tsl_version,omitempty"`
 	DeviceClass     string `json:"device_class,omitempty"`
 	SerialNumber    string `json:"sn,omitempty"`
+	Reset           bool   `json:"reset,omitempty"`
 }
 
 func (d *DeviceInfo) MessageKind() decoders.Kind           { return decoders.KindDeviceInfo }
@@ -280,10 +288,13 @@ func Decode(model Model, u decoders.Uplink) (any, error) {
 	}
 
 	switch {
+	case hasData:
+		if len(records) > 0 {
+			d.History = records
+		}
+		return &d, nil
 	case len(records) > 0:
 		return &DatalogData{Records: records}, nil
-	case hasData:
-		return &d, nil
 	case hasInfo:
 		return &info, nil
 	case acked:
@@ -320,9 +331,9 @@ func dataLen(model Model, ch, ty byte) (int, error) {
 		return 18, nil
 	case ch == 0xff:
 		switch ty {
-		case 0x0b, 0x01, 0x0f:
+		case 0x0b, 0x01, 0x0f, 0xfe:
 			return 1, nil
-		case 0x09, 0x0a:
+		case 0x09, 0x0a, 0xff:
 			return 2, nil
 		case 0x16:
 			return 8, nil
@@ -341,7 +352,7 @@ func historyLen(model Model) (int, error) {
 	case ModelMLD:
 		return 4 + 1, nil // leak status
 	case ModelDI:
-		return 4 + 9, nil // temperature + humidity + interface type + counter + digital (firmware <= V1.2)
+		return 4 + 9, nil // temperature + humidity + gpio_type + gpio + pulse
 	}
 	return 0, fmt.Errorf("em300v1: historical data not supported for %s", model)
 }
@@ -364,11 +375,17 @@ func decodeInfo(info *DeviceInfo, ty byte, v []byte) {
 			info.DeviceClass = "Class B"
 		case 2:
 			info.DeviceClass = "Class C"
+		case 3:
+			info.DeviceClass = "Class CtoB"
 		default:
 			info.DeviceClass = fmt.Sprintf("Unknown (%d)", v[0])
 		}
 	case 0x16:
 		info.SerialNumber = hex.EncodeToString(v)
+	case 0xff:
+		info.TslVersion = fmt.Sprintf("V%d.%d", v[0], v[1])
+	case 0xfe:
+		info.Reset = v[0] != 0
 	}
 }
 
@@ -392,12 +409,14 @@ func decodeHistory(model Model, v []byte) DatalogEntry {
 	case ModelDI:
 		rec.Temperature = ptr(temp10(rest))
 		rec.Humidity = ptr(float64(rest[2]) / 2)
-		if rest[3] == 0 {
+		// Official layout: gpio_type(1) + gpio(1) + pulse(4). Type 1 = gpio, 2 = pulse.
+		switch rest[3] {
+		case 1:
 			rec.InterfaceType = ptr("digital")
-			rec.DigitalInput = ptr(int(rest[8]))
-		} else {
+			rec.DigitalInput = ptr(int(rest[4]))
+		case 2:
 			rec.InterfaceType = ptr("counter")
-			rec.PulseCount = ptr(int64(binary.LittleEndian.Uint32(rest[4:8])))
+			rec.PulseCount = ptr(int64(binary.LittleEndian.Uint32(rest[5:9])))
 		}
 	}
 	return rec
@@ -410,15 +429,18 @@ func decodeDIHistory(v []byte) DatalogEntry {
 	if name, ok := diAlarmTypes[v[7]]; ok {
 		rec.AlarmType = ptr(name)
 	}
-	if v[8] == 0 {
+	// Official layout: alarm(1) + gpio_type(1) + gpio(1) + water_conv(2) + pulse_conv(2) + water(4).
+	// Type 1 = gpio, 2 = pulse (water conversion fields).
+	switch v[8] {
+	case 1:
 		rec.InterfaceType = ptr("digital")
 		rec.DigitalInput = ptr(int(v[9]))
-	} else {
+	case 2:
 		rec.InterfaceType = ptr("counter")
+		rec.WaterConv = ptr(float64(binary.LittleEndian.Uint16(v[10:12])) / 10)
+		rec.PulseConv = ptr(float64(binary.LittleEndian.Uint16(v[12:14])) / 10)
+		rec.WaterConsumption = ptr(float32LE2(v[14:18]))
 	}
-	rec.WaterConv = ptr(float64(binary.LittleEndian.Uint16(v[10:12])) / 10)
-	rec.PulseConv = ptr(float64(binary.LittleEndian.Uint16(v[12:14])) / 10)
-	rec.WaterConsumption = ptr(float64(math.Float32frombits(binary.LittleEndian.Uint32(v[14:18]))))
 	return rec
 }
 
@@ -427,7 +449,14 @@ func decodeDIHistory(v []byte) DatalogEntry {
 func setPulseConversion(d *Data, v []byte) {
 	d.WaterConv = ptr(float64(binary.LittleEndian.Uint16(v[0:2])) / 10)
 	d.PulseConv = ptr(float64(binary.LittleEndian.Uint16(v[2:4])) / 10)
-	d.WaterConsumption = ptr(float64(math.Float32frombits(binary.LittleEndian.Uint32(v[4:8]))))
+	d.WaterConsumption = ptr(float32LE2(v[4:8]))
+}
+
+// float32LE2 reads a little-endian float32 and rounds to 2 decimal places,
+// matching the official Milesight JS decoder (Number(f.toFixed(2))).
+func float32LE2(v []byte) float64 {
+	f := float64(math.Float32frombits(binary.LittleEndian.Uint32(v)))
+	return math.Round(f*100) / 100
 }
 
 func pulseAlarm(status byte) (name string, active int) {
