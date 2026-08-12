@@ -97,16 +97,16 @@ func offersFor(m Model) []decoders.Offering {
 // Data is a decoded EM300 telemetry uplink. Only channels present in the
 // payload are set.
 type Data struct {
-	Battery          *int     `json:"battery,omitempty"`            // %
-	Temperature      *float64 `json:"temperature,omitempty"`        // °C
-	Humidity         *float64 `json:"humidity,omitempty"`           // %RH
-	WaterLeak        *int     `json:"water_leak,omitempty"`         // 0 no leak, 1 leaked
-	MagnetStatus     *int     `json:"magnet_status,omitempty"`      // 0 close, 1 open
-	DigitalInput     *int     `json:"digital_input,omitempty"`      // 0 low, 1 high (EM300-DI)
-	PulseCount       *int64   `json:"pulse_count,omitempty"`        // EM300-DI counter (firmware <= V1.2)
-	WaterConv        *float64 `json:"water_conv,omitempty"`         // EM300-DI pulse conversion
-	PulseConv        *float64 `json:"pulse_conv,omitempty"`         // EM300-DI pulse conversion
-	WaterConsumption *float64 `json:"water_consumption,omitempty"`  // EM300-DI, unit per pulse conversion setting
+	Battery          *int           `json:"battery,omitempty"`            // %
+	Temperature      *float64       `json:"temperature,omitempty"`        // °C
+	Humidity         *float64       `json:"humidity,omitempty"`           // %RH
+	WaterLeak        *int           `json:"water_leak,omitempty"`         // 0 no leak, 1 leaked
+	MagnetStatus     *int           `json:"magnet_status,omitempty"`      // 0 close, 1 open
+	DigitalInput     *int           `json:"digital_input,omitempty"`      // 0 low, 1 high (EM300-DI)
+	PulseCount       *int64         `json:"pulse_count,omitempty"`        // EM300-DI counter (firmware <= V1.2)
+	WaterConv        *float64       `json:"water_conv,omitempty"`         // EM300-DI pulse conversion
+	PulseConv        *float64       `json:"pulse_conv,omitempty"`         // EM300-DI pulse conversion
+	WaterConsumption *float64       `json:"water_consumption,omitempty"`  // EM300-DI, unit per pulse conversion setting
 	LiquidStatus     *int           `json:"liquid_status,omitempty"`      // 0 uncalibrated, 1 full, 2 empty, 255 sensor error (EM300-CL)
 	Calibration      *int           `json:"calibration_status,omitempty"` // 0 failure, 1 success (EM300-CL)
 	Alarm            *int           `json:"alarm,omitempty"`              // 1 alarm, 0 alarm dismiss
@@ -439,7 +439,7 @@ func decodeDIHistory(v []byte) DatalogEntry {
 		rec.InterfaceType = ptr("counter")
 		rec.WaterConv = ptr(float64(binary.LittleEndian.Uint16(v[10:12])) / 10)
 		rec.PulseConv = ptr(float64(binary.LittleEndian.Uint16(v[12:14])) / 10)
-		rec.WaterConsumption = ptr(float64(math.Float32frombits(binary.LittleEndian.Uint32(v[14:18]))))
+		rec.WaterConsumption = ptr(float32LE2(v[14:18]))
 	}
 	return rec
 }
@@ -449,7 +449,14 @@ func decodeDIHistory(v []byte) DatalogEntry {
 func setPulseConversion(d *Data, v []byte) {
 	d.WaterConv = ptr(float64(binary.LittleEndian.Uint16(v[0:2])) / 10)
 	d.PulseConv = ptr(float64(binary.LittleEndian.Uint16(v[2:4])) / 10)
-	d.WaterConsumption = ptr(float64(math.Float32frombits(binary.LittleEndian.Uint32(v[4:8]))))
+	d.WaterConsumption = ptr(float32LE2(v[4:8]))
+}
+
+// float32LE2 reads a little-endian float32 and rounds to 2 decimal places,
+// matching the official Milesight JS decoder (Number(f.toFixed(2))).
+func float32LE2(v []byte) float64 {
+	f := float64(math.Float32frombits(binary.LittleEndian.Uint32(v)))
+	return math.Round(f*100) / 100
 }
 
 func pulseAlarm(status byte) (name string, active int) {

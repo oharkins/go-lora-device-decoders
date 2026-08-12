@@ -3,7 +3,6 @@ package em300v1_test
 import (
 	"encoding/hex"
 	"errors"
-	"math"
 	"testing"
 
 	decoders "github.com/oharkins/go-lora-device-decoders"
@@ -147,6 +146,29 @@ func TestDICounter(t *testing.T) {
 	}
 }
 
+// Captured EM300-DI periodic packet (base64 AXVkA2fxAARoTQXhCgDoA2ZmJkA=).
+func TestDICapturedPeriodic(t *testing.T) {
+	d := data(t, em300v1.ModelDI, "0175640367f10004684d05e10a00e80366662640")
+	if d.Battery == nil || *d.Battery != 100 {
+		t.Errorf("battery = %v, want 100", d.Battery)
+	}
+	if d.Temperature == nil || *d.Temperature != 24.1 {
+		t.Errorf("temperature = %v, want 24.1", d.Temperature)
+	}
+	if d.Humidity == nil || *d.Humidity != 38.5 {
+		t.Errorf("humidity = %v, want 38.5", d.Humidity)
+	}
+	if d.WaterConv == nil || *d.WaterConv != 1 {
+		t.Errorf("water_conv = %v, want 1", d.WaterConv)
+	}
+	if d.PulseConv == nil || *d.PulseConv != 100 {
+		t.Errorf("pulse_conv = %v, want 100", d.PulseConv)
+	}
+	if d.WaterConsumption == nil || *d.WaterConsumption != 2.6 {
+		t.Errorf("water_consumption = %v, want 2.6", d.WaterConsumption)
+	}
+}
+
 // User guide 5.2.2: EM300-DI periodic packet (digital mode). Channel 05/00 is
 // digital input on the DI, not water leak.
 func TestDIDigital(t *testing.T) {
@@ -216,9 +238,8 @@ func TestDIHistory(t *testing.T) {
 	if rec.PulseConv == nil || *rec.PulseConv != 10 {
 		t.Errorf("pulse_conv = %v, want 10", rec.PulseConv)
 	}
-	want := float64(math.Float32frombits(0x41af3333)) // 21.9
-	if rec.WaterConsumption == nil || *rec.WaterConsumption != want {
-		t.Errorf("water_consumption = %v, want %v", rec.WaterConsumption, want)
+	if rec.WaterConsumption == nil || *rec.WaterConsumption != 21.9 {
+		t.Errorf("water_consumption = %v, want 21.9", rec.WaterConsumption)
 	}
 }
 
