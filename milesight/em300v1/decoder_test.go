@@ -222,6 +222,115 @@ func TestDIHistory(t *testing.T) {
 	}
 }
 
+// Official Milesight decoder example: telemetry plus a 20ce historical record
+// in one uplink (https://github.com/Milesight-IoT/SensorDecoders/tree/main/em-series/em300-di).
+func TestDIOfficialExample(t *testing.T) {
+	d := data(t, em300v1.ModelDI, "01755c0367340104686520ce9e74466310015d020000010000")
+	if d.Battery == nil || *d.Battery != 92 {
+		t.Errorf("battery = %v, want 92", d.Battery)
+	}
+	if d.Temperature == nil || *d.Temperature != 30.8 {
+		t.Errorf("temperature = %v, want 30.8", d.Temperature)
+	}
+	if d.Humidity == nil || *d.Humidity != 50.5 {
+		t.Errorf("humidity = %v, want 50.5", d.Humidity)
+	}
+	if len(d.History) != 1 {
+		t.Fatalf("history = %d, want 1", len(d.History))
+	}
+	rec := d.History[0]
+	if rec.Timestamp != 1665561758 {
+		t.Errorf("timestamp = %d, want 1665561758", rec.Timestamp)
+	}
+	if rec.Temperature == nil || *rec.Temperature != 27.2 {
+		t.Errorf("history temperature = %v, want 27.2", rec.Temperature)
+	}
+	if rec.Humidity == nil || *rec.Humidity != 46.5 {
+		t.Errorf("history humidity = %v, want 46.5", rec.Humidity)
+	}
+	if rec.InterfaceType == nil || *rec.InterfaceType != "counter" {
+		t.Errorf("interface_type = %v, want counter", rec.InterfaceType)
+	}
+	if rec.PulseCount == nil || *rec.PulseCount != 256 {
+		t.Errorf("pulse_count = %v, want 256", rec.PulseCount)
+	}
+	if rec.DigitalInput != nil {
+		t.Errorf("digital_input = %v, want nil in counter mode", rec.DigitalInput)
+	}
+}
+
+// Official 20ce layout: gpio_type 1 = gpio at offset 8, pulse unused.
+func TestDIHistoryGPIO(t *testing.T) {
+	v := decode(t, em300v1.ModelDI, "20ce9e74466310015d010100000000")
+	dl, ok := v.(*em300v1.DatalogData)
+	if !ok {
+		t.Fatalf("got %T, want *DatalogData", v)
+	}
+	if len(dl.Records) != 1 {
+		t.Fatalf("records = %d, want 1", len(dl.Records))
+	}
+	rec := dl.Records[0]
+	if rec.InterfaceType == nil || *rec.InterfaceType != "digital" {
+		t.Errorf("interface_type = %v, want digital", rec.InterfaceType)
+	}
+	if rec.DigitalInput == nil || *rec.DigitalInput != 1 {
+		t.Errorf("digital_input = %v, want 1", rec.DigitalInput)
+	}
+	if rec.PulseCount != nil {
+		t.Errorf("pulse_count = %v, want nil in gpio mode", rec.PulseCount)
+	}
+}
+
+// Official 21ce gpio mode: type 1 populates gpio, not water conversion fields.
+func TestDIHistoryV2GPIO(t *testing.T) {
+	v := decode(t, em300v1.ModelDI, "21ce0d755b630801570001010000000000000000")
+	dl, ok := v.(*em300v1.DatalogData)
+	if !ok {
+		t.Fatalf("got %T, want *DatalogData", v)
+	}
+	rec := dl.Records[0]
+	if rec.InterfaceType == nil || *rec.InterfaceType != "digital" {
+		t.Errorf("interface_type = %v, want digital", rec.InterfaceType)
+	}
+	if rec.DigitalInput == nil || *rec.DigitalInput != 1 {
+		t.Errorf("digital_input = %v, want 1", rec.DigitalInput)
+	}
+	if rec.WaterConsumption != nil {
+		t.Errorf("water_consumption = %v, want nil in gpio mode", rec.WaterConsumption)
+	}
+}
+
+// User guide 5.2.2 / official decoder: GPIO alarm packet.
+func TestDIDigitalAlarm(t *testing.T) {
+	d := data(t, em300v1.ModelDI, "85000101")
+	if d.DigitalInput == nil || *d.DigitalInput != 1 {
+		t.Errorf("digital_input = %v, want 1", d.DigitalInput)
+	}
+	if d.Alarm == nil || *d.Alarm != 1 {
+		t.Errorf("alarm = %v, want 1", d.Alarm)
+	}
+	if d.AlarmType == nil || *d.AlarmType != "digital_input_alarm" {
+		t.Errorf("alarm_type = %v, want digital_input_alarm", d.AlarmType)
+	}
+}
+
+func TestDeviceInfoTSLAndReset(t *testing.T) {
+	v := decode(t, em300v1.ModelDI, "ffff0102fffe01ff0f03")
+	info, ok := v.(*em300v1.DeviceInfo)
+	if !ok {
+		t.Fatalf("got %T, want *DeviceInfo", v)
+	}
+	if info.TslVersion != "V1.2" {
+		t.Errorf("tsl_version = %q, want V1.2", info.TslVersion)
+	}
+	if !info.Reset {
+		t.Error("reset = false, want true")
+	}
+	if info.DeviceClass != "Class CtoB" {
+		t.Errorf("device_class = %q, want Class CtoB", info.DeviceClass)
+	}
+}
+
 // Historical data for the TH: two 20ce records in one uplink.
 func TestTHHistory(t *testing.T) {
 	v := decode(t, em300v1.ModelTH, "20ce0d755b6308015720ce0d755b63080157")
