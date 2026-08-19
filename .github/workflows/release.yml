@@ -1,0 +1,150 @@
+# Tag a semantic version so external consumers can pin this module:
+#   go get github.com/oharkins/go-lora-device-decoders@vX.Y.Z
+#
+# Push to main creates the next patch tag after tests pass.
+# Use workflow_dispatch to bump minor or major (or to dry-run).
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semantic version bump
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      dry_run:
+        description: Compute the next tag without creating it
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Tag and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            echo "HEAD is already tagged ($(git describe --exact-match --tags HEAD)); skipping."
+            exit 0
+          fi
+
+          latest="$(git tag -l 'v*.*.*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -1 || true)"
+
+          if [ -z "${latest}" ]; then
+            case "${BUMP}" in
+              major) tag="v1.0.0" ;;
+              *)     tag="v0.1.0" ;;
+            esac
+          else
+            IFS=. read -r major minor patch <<< "${latest}"
+            case "${BUMP}" in
+              major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              patch)
+                patch=$((patch + 1))
+                ;;
+              *)
+                echo "Unknown bump: ${BUMP}" >&2
+                exit 1
+                ;;
+            esac
+            tag="v${major}.${minor}.${patch}"
+          fi
+
+          {
+            echo "## Release plan"
+            echo ""
+            echo "- bump: \`${BUMP}\`"
+            echo "- previous: \`${latest:-none}\`"
+            echo "- next: \`${tag}\`"
+            echo "- dry-run: \`${DRY_RUN}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          echo "Next tag: ${tag} (bump=${BUMP}, previous=${latest:-none})"
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "Dry run: not creating tag or GitHub release."
+            exit 0
+          fi
+
+          git tag -a "${tag}" -m "Release ${tag}"
+          git push origin "refs/tags/${tag}"
+
+          gh release create "${tag}" \
+            --title "${tag}" \
+            --generate-notes
+
+      - name: Notify Go module proxy
+        if: success()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          tag="$(git describe --exact-match --tags HEAD 2>/dev/null || true)"
+          if [ -z "${tag}" ]; then
+            echo "No tag on HEAD; skipping proxy notify."
+            exit 0
+          fi
+          module="$(go list -m)"
+          # Lowercase path is required by the module proxy.
+          path="$(printf '%s' "${module}" | tr '[:upper:]' '[:lower:]')"
+          url="https://proxy.golang.org/${path}/@v/${tag}.info"
+          echo "Fetching ${url}"
+          for i in 1 2 3 4 5; do
+            if curl -fsS "${url}"; then
+              echo
+              echo "Module proxy indexed ${path}@${tag}"
+              exit 0
+            fi
+            sleep $((i * 2))
+          done
+          echo "Proxy did not index ${tag} yet; pkg.go.dev will pick it up later."
+          exit 1
