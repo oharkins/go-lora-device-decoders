@@ -12,18 +12,18 @@ func init() {
 }
 
 type Data struct {
-	Latitude   float64 `json:"latitude"`
-	Longitude  float64 `json:"longitude"`
-	Altitude   float64 `json:"altitude"`
-	Accuracy   int     `json:"accuracy"`
-	Roll       float64 `json:"roll"`
-	Pitch      float64 `json:"pitch"`
-	BatV       float64 `json:"bat_v"`
-	AlarmStatus string `json:"alarm_status"`
-	MotionMode  string `json:"motion_mode"`
-	LEDUpDown   string `json:"led_updown"`
-	Firmware    int    `json:"firmware"`
-	HDOP        float64 `json:"hdop"`
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
+	Altitude       float64 `json:"altitude"`
+	Accuracy       int     `json:"accuracy"`
+	Roll           float64 `json:"roll"`
+	Pitch          float64 `json:"pitch"`
+	BatteryVoltage float64 `json:"battery_voltage"`
+	Alarm          string  `json:"alarm"`
+	MotionMode     string  `json:"motion_mode"`
+	LEDUpDown      string  `json:"led_updown"`
+	Firmware       int     `json:"firmware"`
+	HDOP           float64 `json:"hdop"`
 }
 
 func Decode(u decoders.Uplink) (any, error) {
@@ -71,17 +71,17 @@ func Decode(u decoders.Uplink) (any, error) {
 	altitude := float64(int16(uint16(b[16])<<8|uint16(b[17]))) / 100
 
 	return &Data{
-		Latitude:    lat,
-		Longitude:   lon,
-		Altitude:    altitude,
-		Accuracy:    3,
-		Roll:        roll,
-		Pitch:       pitch,
-		BatV:        batV,
-		AlarmStatus: alarm,
-		MotionMode:  motionMode,
-		LEDUpDown:   led,
-		Firmware:    firmware,
-		HDOP:        hdop,
+		Latitude:       lat,
+		Longitude:      lon,
+		Altitude:       altitude,
+		Accuracy:       3,
+		Roll:           roll,
+		Pitch:          pitch,
+		BatteryVoltage: batV,
+		Alarm:          alarm,
+		MotionMode:     motionMode,
+		LEDUpDown:      led,
+		Firmware:       firmware,
+		HDOP:           hdop,
 	}, nil
 }

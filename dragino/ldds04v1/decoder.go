@@ -12,13 +12,13 @@ func init() {
 }
 
 type Data struct {
-	BatV         float64 `json:"bat_v"`
-	EXTITrigger  bool    `json:"exti_trigger"`
-	Distance1CM  float64 `json:"distance1_cm"`
-	Distance2CM  float64 `json:"distance2_cm"`
-	Distance3CM  float64 `json:"distance3_cm"`
-	Distance4CM  float64 `json:"distance4_cm"`
-	MesType      int     `json:"mes_type"`
+	BatteryVoltage  float64 `json:"battery_voltage"`
+	InterruptTrigger string  `json:"interrupt_trigger,omitempty"`
+	Distance1CM     float64 `json:"distance_1_cm"`
+	Distance2CM     float64 `json:"distance_2_cm"`
+	Distance3CM     float64 `json:"distance_3_cm"`
+	Distance4CM     float64 `json:"distance_4_cm"`
+	MessageType     int     `json:"message_type"`
 }
 
 func Decode(u decoders.Uplink) (any, error) {
@@ -29,13 +29,17 @@ func Decode(u decoders.Uplink) (any, error) {
 	if b[0] == 0x03 && b[10] == 0x02 {
 		return nil, nil
 	}
+	trigger := "FALSE"
+	if b[0]&0x80 != 0 {
+		trigger = "TRUE"
+	}
 	return &Data{
-		BatV:        float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		EXTITrigger: b[0]&0x80 != 0,
-		Distance1CM: float64(uint16(b[2])<<8|uint16(b[3])) / 10,
-		Distance2CM: float64(uint16(b[4])<<8|uint16(b[5])) / 10,
-		Distance3CM: float64(uint16(b[6])<<8|uint16(b[7])) / 10,
-		Distance4CM: float64(uint16(b[8])<<8|uint16(b[9])) / 10,
-		MesType:     int(b[10]),
+		BatteryVoltage:  float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		InterruptTrigger: trigger,
+		Distance1CM:     float64(uint16(b[2])<<8|uint16(b[3])) / 10,
+		Distance2CM:     float64(uint16(b[4])<<8|uint16(b[5])) / 10,
+		Distance3CM:     float64(uint16(b[6])<<8|uint16(b[7])) / 10,
+		Distance4CM:     float64(uint16(b[8])<<8|uint16(b[9])) / 10,
+		MessageType:     int(b[10]),
 	}, nil
 }

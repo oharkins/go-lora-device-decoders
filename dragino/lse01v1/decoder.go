@@ -13,11 +13,11 @@ func init() {
 }
 
 type Data struct {
-	BatV         float64 `json:"bat_v"`
-	TempCDS18B20 float64 `json:"temp_c_ds18b20"`
-	WaterSoil    float64 `json:"water_soil"`
-	TempSoil     float64 `json:"temp_soil"`
-	ConductSoil  float64 `json:"conduct_soil"`
+	BatteryVoltage     float64 `json:"battery_voltage"`
+	TemperatureDS18B20 float64 `json:"temperature_ds18b20"`
+	MoistureSoil       float64 `json:"moisture_soil"`
+	TemperatureSoil    float64 `json:"temperature_soil"`
+	ConductivitySoilUSCM float64 `json:"conductivity_soil_us_cm"`
 }
 
 func round(v float64, places int) float64 {
@@ -48,10 +48,10 @@ func Decode(u decoders.Uplink) (any, error) {
 	}
 
 	return &Data{
-		BatV:         float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		TempCDS18B20: round(float64(ds)/10, 2),
-		WaterSoil:    round(float64(uint16(b[4])<<8|uint16(b[5]))/100, 2),
-		TempSoil:     soilTemp,
-		ConductSoil:  round(float64(uint16(b[8])<<8|uint16(b[9]))/100, 2),
+		BatteryVoltage:       float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		TemperatureDS18B20:   round(float64(ds)/10, 2),
+		MoistureSoil:         round(float64(uint16(b[4])<<8|uint16(b[5]))/100, 2),
+		TemperatureSoil:      soilTemp,
+		ConductivitySoilUSCM: round(float64(uint16(b[8])<<8|uint16(b[9]))/100, 2),
 	}, nil
 }

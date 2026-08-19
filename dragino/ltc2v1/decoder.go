@@ -14,7 +14,7 @@ func init() {
 
 type Data struct {
 	Ext          int      `json:"ext"`
-	BatV         float64  `json:"bat_v"`
+	BatteryVoltage         float64  `json:"battery_voltage"`
 	TempChannel1 *float64 `json:"temp_channel1,omitempty"`
 	TempChannel2 *float64 `json:"temp_channel2,omitempty"`
 	ResChannel1  *float64 `json:"res_channel1,omitempty"`
@@ -41,7 +41,7 @@ func Decode(u decoders.Uplink) (any, error) {
 	ext := int(b[2] & 0x0F)
 	d := &Data{
 		Ext:          ext,
-		BatV:         float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		BatteryVoltage:         float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
 		SysTimestamp: int64(uint32(b[7])<<24 | uint32(b[8])<<16 | uint32(b[9])<<8 | uint32(b[10])),
 	}
 	switch ext {

@@ -14,24 +14,24 @@ func init() {
 
 // Data is the decoded payload for FPort 2 (vibration data).
 type Data struct {
-	NodeType  string   `json:"node_type"`
-	BatV      float64  `json:"bat_v"`
-	Mod       int      `json:"mod"`
-	VibCount  *uint32  `json:"vib_count,omitempty"`
-	WorkMin   *uint32  `json:"work_min,omitempty"`
-	TempCSHT  *float64 `json:"temp_c_sht,omitempty"`
-	HumSHT    *float64 `json:"hum_sht,omitempty"`
-	Alarm     string   `json:"alarm"`
-	TDC       string   `json:"tdc"`
+	NodeType       string   `json:"node_type"`
+	BatteryVoltage float64  `json:"battery_voltage"`
+	Mode           int      `json:"mode"`
+	VibrationCount *uint32  `json:"vibration_count,omitempty"`
+	WorkMinutes    *uint32  `json:"work_minutes,omitempty"`
+	Temperature    *float64 `json:"temperature,omitempty"`
+	Humidity       *float64 `json:"humidity,omitempty"`
+	Alarm          string   `json:"alarm"`
+	TDC            string   `json:"tdc"`
 }
 
 // AccelData is the decoded payload for FPort 9 (peak acceleration).
 type AccelData struct {
-	NodeType  string  `json:"node_type"`
-	BatV      float64 `json:"bat_v"`
-	MaxAccXG  float64 `json:"max_acc_x_g"`
-	MaxAccYG  float64 `json:"max_acc_y_g"`
-	MaxAccZG  float64 `json:"max_acc_z_g"`
+	NodeType         string  `json:"node_type"`
+	BatteryVoltage   float64 `json:"battery_voltage"`
+	MaxAccelerationXG float64 `json:"max_acceleration_x_g"`
+	MaxAccelerationYG float64 `json:"max_acceleration_y_g"`
+	MaxAccelerationZG float64 `json:"max_acceleration_z_g"`
 }
 
 // DeviceInfo is the decoded payload for FPort 5.
@@ -41,21 +41,21 @@ type DeviceInfo struct {
 	FirmwareVersion string  `json:"firmware_version"`
 	FrequencyBand   string  `json:"frequency_band"`
 	SubBand         any     `json:"sub_band"`
-	Bat             float64 `json:"bat"`
+	BatteryVoltage  float64 `json:"battery_voltage"`
 }
 
 // DatalogEntry holds one accelerometer record from the FPort 7 data log.
 type DatalogEntry struct {
-	AccXG float64 `json:"acc_x_g"`
-	AccYG float64 `json:"acc_y_g"`
-	AccZG float64 `json:"acc_z_g"`
+	AccelerationXG float64 `json:"acceleration_x_g"`
+	AccelerationYG float64 `json:"acceleration_y_g"`
+	AccelerationZG float64 `json:"acceleration_z_g"`
 }
 
 // DatalogData is the decoded FPort 7 payload.
 type DatalogData struct {
-	NodeType string         `json:"node_type"`
-	BatV     float64        `json:"bat_v"`
-	Datalog  []DatalogEntry `json:"datalog"`
+	NodeType       string         `json:"node_type"`
+	BatteryVoltage float64        `json:"battery_voltage"`
+	Datalog        []DatalogEntry `json:"datalog"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -126,28 +126,28 @@ func Decode(u decoders.Uplink) (any, error) {
 			tdc = "YES"
 		}
 		d := &Data{
-			NodeType: "LHT65N-VIB",
-			BatV:     batV,
-			Mod:      mod,
-			Alarm:    alarm,
-			TDC:      tdc,
+			NodeType:       "LHT65N-VIB",
+			BatteryVoltage: batV,
+			Mode:           mod,
+			Alarm:          alarm,
+			TDC:            tdc,
 		}
 		switch mod {
 		case 1:
 			vc := uint32(b[3])<<24 | uint32(b[4])<<16 | uint32(b[5])<<8 | uint32(b[6])
 			wm := uint32(b[7])<<24 | uint32(b[8])<<16 | uint32(b[9])<<8 | uint32(b[10])
-			d.VibCount = ptr(vc)
-			d.WorkMin = ptr(wm)
+			d.VibrationCount = ptr(vc)
+			d.WorkMinutes = ptr(wm)
 		case 2:
 			vc := uint32(b[3])<<24 | uint32(b[4])<<16 | uint32(b[5])<<8 | uint32(b[6])
-			d.VibCount = ptr(vc)
-			d.TempCSHT = ptr(round(signed16(b[7], b[8])/100, 2))
-			d.HumSHT = ptr(round(float64((uint16(b[9])<<8|uint16(b[10]))&0xFFF)/10, 1))
+			d.VibrationCount = ptr(vc)
+			d.Temperature = ptr(round(signed16(b[7], b[8])/100, 2))
+			d.Humidity = ptr(round(float64((uint16(b[9])<<8|uint16(b[10]))&0xFFF)/10, 1))
 		case 3:
-			d.TempCSHT = ptr(round(signed16(b[3], b[4])/100, 2))
-			d.HumSHT = ptr(round(float64((uint16(b[5])<<8|uint16(b[6]))&0xFFF)/10, 1))
+			d.Temperature = ptr(round(signed16(b[3], b[4])/100, 2))
+			d.Humidity = ptr(round(float64((uint16(b[5])<<8|uint16(b[6]))&0xFFF)/10, 1))
 			wm := uint32(b[7])<<24 | uint32(b[8])<<16 | uint32(b[9])<<8 | uint32(b[10])
-			d.WorkMin = ptr(wm)
+			d.WorkMinutes = ptr(wm)
 		}
 		return d, nil
 
@@ -172,7 +172,7 @@ func Decode(u decoders.Uplink) (any, error) {
 			FirmwareVersion: firmVer,
 			FrequencyBand:   freqBand(b[3]),
 			SubBand:         subBand,
-			Bat:             float64(uint16(b[5])<<8|uint16(b[6])) / 1000,
+			BatteryVoltage:  float64(uint16(b[5])<<8|uint16(b[6])) / 1000,
 		}, nil
 
 	case 7:
@@ -183,23 +183,23 @@ func Decode(u decoders.Uplink) (any, error) {
 		var entries []DatalogEntry
 		for k := 2; k+5 < len(b); k += 6 {
 			entries = append(entries, DatalogEntry{
-				AccXG: round(signed16(b[k], b[k+1])/1000, 3),
-				AccYG: round(signed16(b[k+2], b[k+3])/1000, 3),
-				AccZG: round(signed16(b[k+4], b[k+5])/1000, 3),
+				AccelerationXG: round(signed16(b[k], b[k+1])/1000, 3),
+				AccelerationYG: round(signed16(b[k+2], b[k+3])/1000, 3),
+				AccelerationZG: round(signed16(b[k+4], b[k+5])/1000, 3),
 			})
 		}
-		return &DatalogData{NodeType: "LHT65N-VIB", BatV: batV, Datalog: entries}, nil
+		return &DatalogData{NodeType: "LHT65N-VIB", BatteryVoltage: batV, Datalog: entries}, nil
 
 	case 9:
 		if len(b) < 8 {
 			return nil, fmt.Errorf("lht65nvibv1: port 9 payload too short: %d bytes", len(b))
 		}
 		return &AccelData{
-			NodeType: "LHT65N-VIB",
-			BatV:     float64(uint16(b[0])<<8|uint16(b[1])) / 1000,
-			MaxAccXG: round(signed16(b[2], b[3])/1000, 3),
-			MaxAccYG: round(signed16(b[4], b[5])/1000, 3),
-			MaxAccZG: round(signed16(b[6], b[7])/1000, 3),
+			NodeType:          "LHT65N-VIB",
+			BatteryVoltage:    float64(uint16(b[0])<<8|uint16(b[1])) / 1000,
+			MaxAccelerationXG: round(signed16(b[2], b[3])/1000, 3),
+			MaxAccelerationYG: round(signed16(b[4], b[5])/1000, 3),
+			MaxAccelerationZG: round(signed16(b[6], b[7])/1000, 3),
 		}, nil
 
 	default:

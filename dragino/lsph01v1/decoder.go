@@ -13,12 +13,12 @@ func init() {
 }
 
 type Data struct {
-	BatV          float64 `json:"bat_v"`
-	TempCDS18B20  float64 `json:"temp_c_ds18b20"`
-	PH1Soil       float64 `json:"ph1_soil"`
-	TempSoil      float64 `json:"temp_soil"`
-	InterruptFlag int     `json:"interrupt_flag"`
-	MessageType   int     `json:"message_type"`
+	BatteryVoltage     float64 `json:"battery_voltage"`
+	TemperatureDS18B20 float64 `json:"temperature_ds18b20"`
+	PHSoil             float64 `json:"ph_soil"`
+	TemperatureSoil    float64 `json:"temperature_soil"`
+	InterruptFlag      int     `json:"interrupt_flag"`
+	MessageType        int     `json:"message_type"`
 }
 
 func round(v float64, places int) float64 {
@@ -48,11 +48,11 @@ func Decode(u decoders.Uplink) (any, error) {
 	}
 
 	return &Data{
-		BatV:          float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		TempCDS18B20:  round(float64(ds)/10, 2),
-		PH1Soil:       round(float64(uint16(b[4])<<8|uint16(b[5]))/100, 2),
-		TempSoil:      soilTemp,
-		InterruptFlag: int(b[8]),
-		MessageType:   int(b[10]),
+		BatteryVoltage:     float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		TemperatureDS18B20: round(float64(ds)/10, 2),
+		PHSoil:             round(float64(uint16(b[4])<<8|uint16(b[5]))/100, 2),
+		TemperatureSoil:    soilTemp,
+		InterruptFlag:      int(b[8]),
+		MessageType:        int(b[10]),
 	}, nil
 }

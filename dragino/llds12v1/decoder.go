@@ -13,13 +13,13 @@ func init() {
 }
 
 type Data struct {
-	BatV                   float64 `json:"bat_v"`
-	TempCDS18B20           float64 `json:"temp_c_ds18b20"`
-	LidarDistanceCM        float64 `json:"lidar_distance_cm"`
-	LidarSignalStrength    int     `json:"lidar_signal_strength"`
-	LidarTemp              int     `json:"lidar_temp"`
-	InterruptFlag          int     `json:"interrupt_flag"`
-	MessageType            int     `json:"message_type"`
+	BatteryVoltage          float64 `json:"battery_voltage"`
+	TemperatureDS18B20      float64 `json:"temperature_ds18b20"`
+	DistanceCM              float64 `json:"distance_cm"`
+	DistanceSignalStrength  int     `json:"distance_signal_strength"`
+	TemperatureLidar        int     `json:"temperature_lidar"`
+	InterruptFlag           int     `json:"interrupt_flag"`
+	MessageType             int     `json:"message_type"`
 }
 
 func round(v float64, places int) float64 {
@@ -36,12 +36,12 @@ func Decode(u decoders.Uplink) (any, error) {
 		return nil, nil
 	}
 	return &Data{
-		BatV:                float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		TempCDS18B20:        round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/10, 2),
-		LidarDistanceCM:     float64(uint16(b[4])<<8|uint16(b[5])) / 10,
-		LidarSignalStrength: int(uint16(b[6])<<8 | uint16(b[7])),
-		LidarTemp:           int(int8(b[9])),
-		InterruptFlag:       int(b[8]),
-		MessageType:         int(b[10]),
+		BatteryVoltage:         float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		TemperatureDS18B20:     round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/10, 2),
+		DistanceCM:             float64(uint16(b[4])<<8|uint16(b[5])) / 10,
+		DistanceSignalStrength: int(uint16(b[6])<<8 | uint16(b[7])),
+		TemperatureLidar:       int(int8(b[9])),
+		InterruptFlag:          int(b[8]),
+		MessageType:            int(b[10]),
 	}, nil
 }

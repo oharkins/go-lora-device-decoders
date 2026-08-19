@@ -12,7 +12,7 @@ func init() {
 }
 
 type Data struct {
-	BatV                  float64 `json:"bat_v"`
+	BatteryVoltage                  float64 `json:"battery_voltage"`
 	Mod                   int     `json:"mod"`
 	DoorOpenStatus        *int    `json:"door_open_status,omitempty"`
 	WaterLeakStatus       *int    `json:"water_leak_status,omitempty"`
@@ -35,7 +35,7 @@ func Decode(u decoders.Uplink) (any, error) {
 	waterStatus := int((b[0] & 0x40) >> 6)
 	mod := int(b[2])
 	alarm := int(b[9] & 0x01)
-	d := &Data{BatV: bat, Mod: mod}
+	d := &Data{BatteryVoltage: bat, Mod: mod}
 	switch mod {
 	case 1:
 		openTimes := int(uint32(b[3])<<16 | uint32(b[4])<<8 | uint32(b[5]))

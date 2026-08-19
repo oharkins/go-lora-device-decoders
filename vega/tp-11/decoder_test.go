@@ -20,9 +20,9 @@ type testCase struct {
 	reason      string
 	batteryPct  int
 	temperature int
-	ma          float64
-	maLow       float64
-	maHigh      float64
+	currentMA   float64
+	currentLowMA  float64
+	currentHighMA float64
 	// expected values after 0-5 m conversion
 	value     float64
 	valueLow  float64
@@ -31,32 +31,32 @@ type testCase struct {
 
 var cases = []testCase{
 	{
-		name:        "sample 1",
-		b64:         "AS4A8renZByQAdAHAADqAw==",
-		fport:       2,
-		reason:      "Sending packet by the time",
-		batteryPct:  46,
-		temperature: 28,
-		ma:          10.02,
-		maLow:       4.00,
-		maHigh:      20.00,
-		value:       1.88125, // ((10.02-4)/16)*5
-		valueLow:    0.0,     // 4 mA → 0 m
-		valueHigh:   5.0,     // 20 mA → 5 m
+		name:          "sample 1",
+		b64:           "AS4A8renZByQAdAHAADqAw==",
+		fport:         2,
+		reason:        "Sending packet by the time",
+		batteryPct:    46,
+		temperature:   28,
+		currentMA:     10.02,
+		currentLowMA:  4.00,
+		currentHighMA: 20.00,
+		value:         1.88125, // ((10.02-4)/16)*5
+		valueLow:      0.0,     // 4 mA → 0 m
+		valueHigh:     5.0,     // 20 mA → 5 m
 	},
 	{
-		name:        "sample 2",
-		b64:         "AT8A9WXpZR9eAdAHAACEAw==",
-		fport:       2,
-		reason:      "Sending packet by the time",
-		batteryPct:  63,
-		temperature: 31,
-		ma:          9.00,
-		maLow:       3.50,  // below 4 mA → fault
-		maHigh:      20.00,
-		value:       1.5625, // ((9.00-4)/16)*5
-		valueLow:    -1,     // 3.50 mA → fault
-		valueHigh:   5.0,
+		name:          "sample 2",
+		b64:           "AT8A9WXpZR9eAdAHAACEAw==",
+		fport:         2,
+		reason:        "Sending packet by the time",
+		batteryPct:    63,
+		temperature:   31,
+		currentMA:     9.00,
+		currentLowMA:  3.50,  // below 4 mA → fault
+		currentHighMA: 20.00,
+		value:         1.5625, // ((9.00-4)/16)*5
+		valueLow:      -1,     // 3.50 mA → fault
+		valueHigh:     5.0,
 	},
 }
 
@@ -86,14 +86,14 @@ func TestDecode_Base(t *testing.T) {
 			if d.Temperature != tc.temperature {
 				t.Errorf("temperature = %d, want %d", d.Temperature, tc.temperature)
 			}
-			if d.MA != tc.ma {
-				t.Errorf("ma = %v, want %v", d.MA, tc.ma)
+			if d.CurrentMA != tc.currentMA {
+				t.Errorf("current_ma = %v, want %v", d.CurrentMA, tc.currentMA)
 			}
-			if d.MALow != tc.maLow {
-				t.Errorf("ma_low = %v, want %v", d.MALow, tc.maLow)
+			if d.CurrentLowMA != tc.currentLowMA {
+				t.Errorf("current_low_ma = %v, want %v", d.CurrentLowMA, tc.currentLowMA)
 			}
-			if d.MAHigh != tc.maHigh {
-				t.Errorf("ma_high = %v, want %v", d.MAHigh, tc.maHigh)
+			if d.CurrentHighMA != tc.currentHighMA {
+				t.Errorf("current_high_ma = %v, want %v", d.CurrentHighMA, tc.currentHighMA)
 			}
 			if d.Value != nil || d.ValueLow != nil || d.ValueHigh != nil {
 				t.Error("base decoder should not populate Value fields")

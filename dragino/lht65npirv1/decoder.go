@@ -14,27 +14,26 @@ func init() {
 }
 
 type Data struct {
-	NodeType     string   `json:"node_type"`
-	BatV         *float64 `json:"bat_v,omitempty"`
-	BatStatus    string   `json:"bat_status,omitempty"`
-	TempCSHT     *float64 `json:"temp_c_sht,omitempty"`
-	HumSHT       *float64 `json:"hum_sht,omitempty"`
-	NoConnect    string   `json:"no_connect,omitempty"`
-	ExtSensor    string   `json:"ext_sensor,omitempty"`
-	WorkMode     string   `json:"work_mode,omitempty"`
-	TempCDS      *float64 `json:"temp_c_ds,omitempty"`
-	TempCTMP117  *float64 `json:"temp_c_tmp117,omitempty"`
-	ExtiPinLevel string   `json:"exti_pin_level,omitempty"`
-	ExtiStatus   string   `json:"exti_status,omitempty"`
-	ExitCount    *int64   `json:"exit_count,omitempty"`
-	ExitDuration *int     `json:"exit_duration,omitempty"`
-	MoveCount    *int     `json:"move_count,omitempty"`
-	ILLLx        *int     `json:"ill_lx,omitempty"`
-	ADCV         *float64 `json:"adc_v,omitempty"`
-	SysTimestamp *int64   `json:"sys_timestamp,omitempty"`
-	ExtTempCSHT  *float64 `json:"ext_temp_c_sht,omitempty"`
-	ExtHumSHT    *float64 `json:"ext_hum_sht,omitempty"`
-	ID           string   `json:"id,omitempty"`
+	NodeType            string   `json:"node_type"`
+	BatteryVoltage      *float64 `json:"battery_voltage,omitempty"`
+	BatteryStatus       string   `json:"battery_status,omitempty"`
+	Temperature         *float64 `json:"temperature,omitempty"`
+	Humidity            *float64 `json:"humidity,omitempty"`
+	SensorConnection    string   `json:"sensor_connection,omitempty"`
+	SensorType          string   `json:"sensor_type,omitempty"`
+	WorkMode            string   `json:"work_mode,omitempty"`
+	TemperatureExternal *float64 `json:"temperature_external,omitempty"`
+	InterruptPinLevel   string   `json:"interrupt_pin_level,omitempty"`
+	InterruptStatus     string   `json:"interrupt_status,omitempty"`
+	InterruptCount      *int64   `json:"interrupt_count,omitempty"`
+	InterruptDuration   *int     `json:"interrupt_duration,omitempty"`
+	MoveCount           *int     `json:"move_count,omitempty"`
+	IlluminationLux     *int     `json:"illumination_lux,omitempty"`
+	ADCVoltage          *float64 `json:"adc_voltage,omitempty"`
+	SysTimestamp        *int64   `json:"sys_timestamp,omitempty"`
+	TemperatureSHT      *float64 `json:"temperature_sht,omitempty"`
+	HumidityExternal    *float64 `json:"humidity_external,omitempty"`
+	SensorID            string   `json:"sensor_id,omitempty"`
 }
 
 type DeviceInfo struct {
@@ -43,7 +42,7 @@ type DeviceInfo struct {
 	FirmwareVersion string  `json:"firmware_version"`
 	FrequencyBand   string  `json:"frequency_band"`
 	SubBand         any     `json:"sub_band"`
-	Bat             float64 `json:"bat"`
+	BatteryVoltage  float64 `json:"battery_voltage"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -140,7 +139,7 @@ func Decode(u decoders.Uplink) (any, error) {
 			FirmwareVersion: firmVer,
 			FrequencyBand:   freqBand(b[3]),
 			SubBand:         subBand,
-			Bat:             float64(uint16(b[5])<<8|uint16(b[6])) / 1000,
+			BatteryVoltage:  float64(uint16(b[5])<<8|uint16(b[6])) / 1000,
 		}, nil
 	}
 
@@ -159,97 +158,97 @@ func Decode(u decoders.Uplink) (any, error) {
 	d := &Data{NodeType: "LHT65N-PIR"}
 
 	if ext == 0x09 {
-		d.TempCDS = ptr(round(signed16(b[0], b[1])/100, 2))
-		d.BatStatus = fmt.Sprintf("%d", int(b[4]>>6))
+		d.TemperatureExternal = ptr(round(signed16(b[0], b[1])/100, 2))
+		d.BatteryStatus = fmt.Sprintf("%d", int(b[4]>>6))
 	} else {
 		batV := float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000
-		d.BatV = ptr(batV)
-		d.BatStatus = batStatusStr(int(b[0] >> 6))
+		d.BatteryVoltage = ptr(batV)
+		d.BatteryStatus = batStatusStr(int(b[0] >> 6))
 	}
 
 	// SHT sensor — skipped for PIR (0x0E) and ID modes
 	if ext != 0x0F && ext != 0x10 && ext != 0x20 && ext != 0x0E {
-		d.TempCSHT = ptr(round(signed16(b[2], b[3])/100, 2))
-		d.HumSHT = ptr(round(float64((uint16(b[4])<<8|uint16(b[5]))&0xFFF)/10, 1))
+		d.Temperature = ptr(round(signed16(b[2], b[3])/100, 2))
+		d.Humidity = ptr(round(float64((uint16(b[4])<<8|uint16(b[5]))&0xFFF)/10, 1))
 	}
 
 	if connect == 1 {
-		d.NoConnect = "Sensor no connection"
+		d.SensorConnection = "Sensor no connection"
 	}
 
 	switch ext {
 	case 0:
-		d.ExtSensor = "No external sensor"
+		d.SensorType = "No external sensor"
 	case 1:
-		d.ExtSensor = "Temperature Sensor"
-		d.TempCDS = ptr(round(signed16(b[7], b[8])/100, 2))
+		d.SensorType = "Temperature Sensor"
+		d.TemperatureExternal = ptr(round(signed16(b[7], b[8])/100, 2))
 	case 2:
-		d.ExtSensor = "Temperature Sensor"
-		d.TempCTMP117 = ptr(round(signed16(b[7], b[8])/100, 2))
+		d.SensorType = "Temperature Sensor"
+		d.TemperatureExternal = ptr(round(signed16(b[7], b[8])/100, 2))
 	case 4:
 		d.WorkMode = "Interrupt Sensor send"
 		if b[7] != 0 {
-			d.ExtiPinLevel = "High"
+			d.InterruptPinLevel = "High"
 		} else {
-			d.ExtiPinLevel = "Low"
+			d.InterruptPinLevel = "Low"
 		}
 		if b[8] != 0 {
-			d.ExtiStatus = "True"
+			d.InterruptStatus = "True"
 		} else {
-			d.ExtiStatus = "False"
+			d.InterruptStatus = "False"
 		}
 		if len(b) > 11 {
 			c := int64(uint32(b[9])<<16 | uint32(b[10])<<8 | uint32(b[11]))
-			d.ExitCount = ptr(c)
+			d.InterruptCount = ptr(c)
 		}
 		if len(b) > 14 {
 			dur := int(uint32(b[12])<<16 | uint32(b[13])<<8 | uint32(b[14]))
-			d.ExitDuration = ptr(dur)
+			d.InterruptDuration = ptr(dur)
 		}
 	case 5:
 		d.WorkMode = "Illumination Sensor"
 		v := int(uint16(b[7])<<8 | uint16(b[8]))
-		d.ILLLx = ptr(v)
+		d.IlluminationLux = ptr(v)
 	case 6:
 		d.WorkMode = "ADC Sensor"
-		d.ADCV = ptr(float64(uint16(b[7])<<8|uint16(b[8])) / 1000)
+		d.ADCVoltage = ptr(float64(uint16(b[7])<<8|uint16(b[8])) / 1000)
 	case 7:
 		d.WorkMode = "Interrupt Sensor count"
 		c := int64(uint16(b[7])<<8 | uint16(b[8]))
-		d.ExitCount = ptr(c)
+		d.InterruptCount = ptr(c)
 	case 8:
 		d.WorkMode = "Interrupt Sensor count"
 		c := int64(uint32(b[7])<<24 | uint32(b[8])<<16 | uint32(b[9])<<8 | uint32(b[10]))
-		d.ExitCount = ptr(c)
+		d.InterruptCount = ptr(c)
 	case 9:
 		d.WorkMode = "DS18B20 & timestamp"
 		ts := int64(uint32(b[7])<<24 | uint32(b[8])<<16 | uint32(b[9])<<8 | uint32(b[10]))
 		d.SysTimestamp = ptr(ts)
 	case 11:
 		d.WorkMode = "SHT31 Sensor"
-		d.ExtTempCSHT = ptr(round(signed16(b[7], b[8])/100, 2))
-		d.ExtHumSHT = ptr(round(float64((uint16(b[9])<<8|uint16(b[10]))&0xFFF)/10, 1))
+		d.TemperatureSHT = ptr(round(signed16(b[7], b[8])/100, 2))
+		d.HumidityExternal = ptr(round(float64((uint16(b[9])<<8|uint16(b[10]))&0xFFF)/10, 1))
 	case 0x0E:
 		d.WorkMode = "PIR Sensor"
 		if b[7]&0x01 != 0 {
-			d.ExtiPinLevel = "Activity"
+			d.InterruptPinLevel = "Activity"
 		} else {
-			d.ExtiPinLevel = "No activity"
+			d.InterruptPinLevel = "No activity"
 		}
 		mc := int(uint32(b[8])<<16 | uint32(b[9])<<8 | uint32(b[10]))
 		d.MoveCount = ptr(mc)
 	case 0x10:
 		d.WorkMode = "SHT31ID"
-		d.ID = hexID(b[2], b[3], b[4], b[5])
-		d.ExtTempCSHT = ptr(round(signed16(b[7], b[8])/100, 2))
-		d.ExtHumSHT = ptr(round(float64((uint16(b[9])<<8|uint16(b[10]))&0xFFF)/10, 1))
+		d.SensorID = hexID(b[2], b[3], b[4], b[5])
+		d.TemperatureSHT = ptr(round(signed16(b[7], b[8])/100, 2))
+		d.HumidityExternal = ptr(round(float64((uint16(b[9])<<8|uint16(b[10]))&0xFFF)/10, 1))
 	case 0x20:
 		d.WorkMode = "NE117ID"
-		d.ID = hexID(b[2], b[3], b[4], b[5], b[9], b[10])
-		d.TempCTMP117 = ptr(round(signed16(b[7], b[8])/100, 2))
+		d.SensorID = hexID(b[2], b[3], b[4], b[5], b[9], b[10])
+		d.TemperatureExternal = ptr(round(signed16(b[7], b[8])/100, 2))
 	case 15:
 		d.WorkMode = "DS18B20ID"
-		d.ID = hexID(b[2], b[3], b[4], b[5], b[7], b[8], b[9], b[10])
+		d.SensorID = hexID(b[2], b[3], b[4], b[5], b[7], b[8], b[9], b[10])
 	}
 
 	return d, nil

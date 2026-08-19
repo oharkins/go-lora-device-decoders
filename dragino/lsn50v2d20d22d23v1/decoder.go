@@ -14,18 +14,18 @@ func init() {
 }
 
 type Data struct {
-	WorkMode    string   `json:"work_mode"`
-	BatV        *float64 `json:"bat_v,omitempty"`
-	AlarmStatus *bool    `json:"alarm_status,omitempty"`
-	TempRed     any      `json:"temp_red,omitempty"`
-	TempWhite   any      `json:"temp_white,omitempty"`
-	TempBlack   any      `json:"temp_black,omitempty"`
-	TempRedMin  *int8    `json:"temp_red_min,omitempty"`
-	TempRedMax  *int8    `json:"temp_red_max,omitempty"`
-	TempWhiteMin *int8   `json:"temp_white_min,omitempty"`
-	TempWhiteMax *int8   `json:"temp_white_max,omitempty"`
-	TempBlackMin *int8   `json:"temp_black_min,omitempty"`
-	TempBlackMax *int8   `json:"temp_black_max,omitempty"`
+	WorkMode         string   `json:"work_mode"`
+	BatteryVoltage   *float64 `json:"battery_voltage,omitempty"`
+	Alarm            *bool    `json:"alarm,omitempty"`
+	TemperatureRed   any      `json:"temperature_red,omitempty"`
+	TemperatureWhite any      `json:"temperature_white,omitempty"`
+	TemperatureBlack any      `json:"temperature_black,omitempty"`
+	TempRedMin       *int8    `json:"temp_red_min,omitempty"`
+	TempRedMax       *int8    `json:"temp_red_max,omitempty"`
+	TempWhiteMin     *int8    `json:"temp_white_min,omitempty"`
+	TempWhiteMax     *int8    `json:"temp_white_max,omitempty"`
+	TempBlackMin     *int8    `json:"temp_black_min,omitempty"`
+	TempBlackMax     *int8    `json:"temp_black_max,omitempty"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -53,12 +53,12 @@ func Decode(u decoders.Uplink) (any, error) {
 	case 3:
 		d.WorkMode = "DS18B20"
 		batV := float64(uint16(b[0])<<8|uint16(b[1])) / 1000
-		d.BatV = ptr(batV)
+		d.BatteryVoltage = ptr(batV)
 		alarm := b[6]&0x01 != 0
-		d.AlarmStatus = ptr(alarm)
-		d.TempRed = nullableTemp(b[2], b[3], 10)
-		d.TempWhite = nullableTemp(b[7], b[8], 10)
-		d.TempBlack = nullableTemp(b[9], b[10], 10)
+		d.Alarm = ptr(alarm)
+		d.TemperatureRed = nullableTemp(b[2], b[3], 10)
+		d.TemperatureWhite = nullableTemp(b[7], b[8], 10)
+		d.TemperatureBlack = nullableTemp(b[9], b[10], 10)
 	case 31:
 		d.WorkMode = "ALARM"
 		d.TempRedMin = ptr(int8(b[4]))

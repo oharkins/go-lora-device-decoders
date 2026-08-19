@@ -13,43 +13,43 @@ func init() {
 }
 
 type Data struct {
-	HardwareMode string   `json:"hardware_mode,omitempty"`
-	WorkMode     string   `json:"work_mode,omitempty"`
-	DO1Status    string   `json:"do1_status,omitempty"`
-	DO2Status    string   `json:"do2_status,omitempty"`
-	DO3Status    string   `json:"do3_status,omitempty"`
-	RO1Status    string   `json:"ro1_status,omitempty"`
-	RO2Status    string   `json:"ro2_status,omitempty"`
-	DI1Status    string   `json:"di1_status,omitempty"`
-	DI2Status    string   `json:"di2_status,omitempty"`
-	DI3Status    string   `json:"di3_status,omitempty"`
-	FirstStatus  string   `json:"first_status,omitempty"`
-	Count1Times  *int     `json:"count1_times,omitempty"`
-	Count2Times  *int     `json:"count2_times,omitempty"`
-	AcountTimes  *int     `json:"acount_times,omitempty"`
-	AVI1V        *float64 `json:"avi1_v,omitempty"`
-	AVI2V        *float64 `json:"avi2_v,omitempty"`
-	ACI1MA       *float64 `json:"aci1_ma,omitempty"`
-	ACI2MA       *float64 `json:"aci2_ma,omitempty"`
-	ModeStatus   string   `json:"mode_status,omitempty"`
-	AV1LFlag     string   `json:"av1l_flag,omitempty"`
-	AV1HFlag     string   `json:"av1h_flag,omitempty"`
-	AV2LFlag     string   `json:"av2l_flag,omitempty"`
-	AV2HFlag     string   `json:"av2h_flag,omitempty"`
-	AC1LFlag     string   `json:"ac1l_flag,omitempty"`
-	AC1HFlag     string   `json:"ac1h_flag,omitempty"`
-	AC2LFlag     string   `json:"ac2l_flag,omitempty"`
-	AC2HFlag     string   `json:"ac2h_flag,omitempty"`
-	AV1LStatus   string   `json:"av1l_status,omitempty"`
-	AV1HStatus   string   `json:"av1h_status,omitempty"`
-	AV2LStatus   string   `json:"av2l_status,omitempty"`
-	AV2HStatus   string   `json:"av2h_status,omitempty"`
-	AC1LStatus   string   `json:"ac1l_status,omitempty"`
-	AC1HStatus   string   `json:"ac1h_status,omitempty"`
-	AC2LStatus   string   `json:"ac2l_status,omitempty"`
-	AC2HStatus   string   `json:"ac2h_status,omitempty"`
-	DI1Flag      string   `json:"di1_flag,omitempty"`
-	DI2Flag      string   `json:"di2_flag,omitempty"`
+	HardwareMode    string   `json:"hardware_mode,omitempty"`
+	WorkMode        string   `json:"work_mode,omitempty"`
+	DO1Status       string   `json:"do1_status,omitempty"`
+	DO2Status       string   `json:"do2_status,omitempty"`
+	DO3Status       string   `json:"do3_status,omitempty"`
+	RO1Status       string   `json:"ro1_status,omitempty"`
+	RO2Status       string   `json:"ro2_status,omitempty"`
+	DI1Status       string   `json:"di1_status,omitempty"`
+	DI2Status       string   `json:"di2_status,omitempty"`
+	DI3Status       string   `json:"di3_status,omitempty"`
+	FirstStatus     string   `json:"first_status,omitempty"`
+	Count1          *int     `json:"count_1,omitempty"`
+	Count2          *int     `json:"count_2,omitempty"`
+	AlarmCount      *int     `json:"alarm_count,omitempty"`
+	AnalogVoltage1V *float64 `json:"analog_voltage_1_v,omitempty"`
+	AnalogVoltage2V *float64 `json:"analog_voltage_2_v,omitempty"`
+	AnalogCurrent1MA *float64 `json:"analog_current_1_ma,omitempty"`
+	AnalogCurrent2MA *float64 `json:"analog_current_2_ma,omitempty"`
+	ModeStatus      string   `json:"mode_status,omitempty"`
+	AV1LFlag        string   `json:"av1l_flag,omitempty"`
+	AV1HFlag        string   `json:"av1h_flag,omitempty"`
+	AV2LFlag        string   `json:"av2l_flag,omitempty"`
+	AV2HFlag        string   `json:"av2h_flag,omitempty"`
+	AC1LFlag        string   `json:"ac1l_flag,omitempty"`
+	AC1HFlag        string   `json:"ac1h_flag,omitempty"`
+	AC2LFlag        string   `json:"ac2l_flag,omitempty"`
+	AC2HFlag        string   `json:"ac2h_flag,omitempty"`
+	AV1LStatus      string   `json:"av1l_status,omitempty"`
+	AV1HStatus      string   `json:"av1h_status,omitempty"`
+	AV2LStatus      string   `json:"av2l_status,omitempty"`
+	AV2HStatus      string   `json:"av2h_status,omitempty"`
+	AC1LStatus      string   `json:"ac1l_status,omitempty"`
+	AC1HStatus      string   `json:"ac1h_status,omitempty"`
+	AC2LStatus      string   `json:"ac2l_status,omitempty"`
+	AC2HStatus      string   `json:"ac2h_status,omitempty"`
+	DI1Flag         string   `json:"di1_flag,omitempty"`
+	DI2Flag         string   `json:"di2_flag,omitempty"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -119,7 +119,7 @@ func Decode(u decoders.Uplink) (any, error) {
 		if mode != 1 {
 			if mode != 5 {
 				c := int(uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3]))
-				d.Count1Times = ptr(c)
+				d.Count1 = ptr(c)
 			}
 			if b[8]&0x20 != 0 {
 				d.FirstStatus = "Yes"
@@ -132,10 +132,10 @@ func Decode(u decoders.Uplink) (any, error) {
 	switch mode {
 	case 1:
 		d.WorkMode = "2ACI+2AVI"
-		d.AVI1V = ptr(round(float64(int16(uint16(b[0])<<8|uint16(b[1])))/1000, 3))
-		d.AVI2V = ptr(round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/1000, 3))
-		d.ACI1MA = ptr(round(float64(int16(uint16(b[4])<<8|uint16(b[5])))/1000, 3))
-		d.ACI2MA = ptr(round(float64(int16(uint16(b[6])<<8|uint16(b[7])))/1000, 3))
+		d.AnalogVoltage1V = ptr(round(float64(int16(uint16(b[0])<<8|uint16(b[1])))/1000, 3))
+		d.AnalogVoltage2V = ptr(round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/1000, 3))
+		d.AnalogCurrent1MA = ptr(round(float64(int16(uint16(b[4])<<8|uint16(b[5])))/1000, 3))
+		d.AnalogCurrent2MA = ptr(round(float64(int16(uint16(b[6])<<8|uint16(b[7])))/1000, 3))
 		if b[8]&0x08 != 0 {
 			d.DI1Status = "H"
 		} else {
@@ -149,22 +149,22 @@ func Decode(u decoders.Uplink) (any, error) {
 	case 2:
 		d.WorkMode = "Count mode 1"
 		c := int(uint32(b[4])<<24 | uint32(b[5])<<16 | uint32(b[6])<<8 | uint32(b[7]))
-		d.Count2Times = ptr(c)
+		d.Count2 = ptr(c)
 	case 3:
 		d.WorkMode = "2ACI+1Count"
-		d.ACI1MA = ptr(round(float64(int16(uint16(b[4])<<8|uint16(b[5])))/1000, 3))
-		d.ACI2MA = ptr(round(float64(int16(uint16(b[6])<<8|uint16(b[7])))/1000, 3))
+		d.AnalogCurrent1MA = ptr(round(float64(int16(uint16(b[4])<<8|uint16(b[5])))/1000, 3))
+		d.AnalogCurrent2MA = ptr(round(float64(int16(uint16(b[6])<<8|uint16(b[7])))/1000, 3))
 	case 4:
 		d.WorkMode = "Count mode 2"
 		c := int(uint32(b[4])<<24 | uint32(b[5])<<16 | uint32(b[6])<<8 | uint32(b[7]))
-		d.AcountTimes = ptr(c)
+		d.AlarmCount = ptr(c)
 	case 5:
 		d.WorkMode = "1ACI+2AVI+1Count"
-		d.AVI1V = ptr(round(float64(int16(uint16(b[0])<<8|uint16(b[1])))/1000, 3))
-		d.AVI2V = ptr(round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/1000, 3))
-		d.ACI1MA = ptr(round(float64(int16(uint16(b[4])<<8|uint16(b[5])))/1000, 3))
+		d.AnalogVoltage1V = ptr(round(float64(int16(uint16(b[0])<<8|uint16(b[1])))/1000, 3))
+		d.AnalogVoltage2V = ptr(round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/1000, 3))
+		d.AnalogCurrent1MA = ptr(round(float64(int16(uint16(b[4])<<8|uint16(b[5])))/1000, 3))
 		c := int(uint16(b[6])<<8 | uint16(b[7]))
-		d.Count1Times = ptr(c)
+		d.Count1 = ptr(c)
 	case 6:
 		d.WorkMode = "Exit mode"
 		if b[9] != 0 {

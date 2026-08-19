@@ -47,9 +47,9 @@ func NewDecoder(cfg RangeConfig) decoders.Decoder {
 			return raw, err
 		}
 		d := raw.(*Data)
-		v := cfg.Convert(d.MA)
-		vl := cfg.Convert(d.MALow)
-		vh := cfg.Convert(d.MAHigh)
+		v := cfg.Convert(d.CurrentMA)
+		vl := cfg.Convert(d.CurrentLowMA)
+		vh := cfg.Convert(d.CurrentHighMA)
 		d.Value = &v
 		d.ValueLow = &vl
 		d.ValueHigh = &vh
@@ -72,9 +72,9 @@ var reasons = [...]string{
 type Data struct {
 	Reason            string   `json:"reason"`
 	BatteryPercentage int      `json:"battery_percentage"`
-	MA                float64  `json:"ma"`
-	MALow             float64  `json:"ma_low"`
-	MAHigh            float64  `json:"ma_high"`
+	CurrentMA         float64  `json:"current_ma"`
+	CurrentLowMA      float64  `json:"current_low_ma"`
+	CurrentHighMA     float64  `json:"current_high_ma"`
 	Temperature       int      `json:"temperature"`
 	Value             *float64 `json:"value,omitempty"`
 	ValueLow          *float64 `json:"value_low,omitempty"`
@@ -103,9 +103,9 @@ func Decode(u decoders.Uplink) (any, error) {
 	return &Data{
 		Reason:            reason,
 		BatteryPercentage: int(b[1]),
-		MA:                float64(uint16(b[15])<<8|uint16(b[14])) / 100,
-		MALow:             float64(uint16(b[9])<<8|uint16(b[8])) / 100,
-		MAHigh:            float64(uint16(b[11])<<8|uint16(b[10])) / 100,
+		CurrentMA:         float64(uint16(b[15])<<8|uint16(b[14])) / 100,
+		CurrentLowMA:      float64(uint16(b[9])<<8|uint16(b[8])) / 100,
+		CurrentHighMA:     float64(uint16(b[11])<<8|uint16(b[10])) / 100,
 		Temperature:       int(b[7]),
 	}, nil
 }

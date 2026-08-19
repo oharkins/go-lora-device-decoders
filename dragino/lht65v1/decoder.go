@@ -26,18 +26,18 @@ var batLevels = [4]string{"Ultra Low", "Low", "OK", "Good"}
 
 // Data is the decoded LHT65 uplink.
 type Data struct {
-	BatLevel               string   `json:"bat_level"`
-	SensorType             string   `json:"sensor_type"`
-	BatteryVoltage         float64  `json:"battery_voltage"`
-	Temperature            float64  `json:"temperature"`
-	Humidity               float64  `json:"humidity"`
-	ExternalTemperature    *float64 `json:"external_temperature,omitempty"`
-	InterruptPinLevel      *string  `json:"interrupt_pin_level,omitempty"`
-	InterruptStatus        *string  `json:"interrupt_status,omitempty"`
-	Illumination           *int     `json:"illumination,omitempty"`
-	ADCVoltage             *float64 `json:"adc_voltage,omitempty"`
-	InterruptCount         *int     `json:"interrupt_count,omitempty"`
-	SensorConnectionStatus *string  `json:"sensor_connection_status,omitempty"`
+	BatteryLevel       string   `json:"battery_level"`
+	SensorType         string   `json:"sensor_type"`
+	BatteryVoltage     float64  `json:"battery_voltage"`
+	Temperature        float64  `json:"temperature"`
+	Humidity           float64  `json:"humidity"`
+	TemperatureExternal *float64 `json:"temperature_external,omitempty"`
+	InterruptPinLevel  *string  `json:"interrupt_pin_level,omitempty"`
+	InterruptStatus    *string  `json:"interrupt_status,omitempty"`
+	IlluminationLux    *int     `json:"illumination_lux,omitempty"`
+	ADCVoltage         *float64 `json:"adc_voltage,omitempty"`
+	InterruptCount     *int     `json:"interrupt_count,omitempty"`
+	SensorConnection   *string  `json:"sensor_connection,omitempty"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -63,7 +63,7 @@ func Decode(u decoders.Uplink) (any, error) {
 
 	batteryRaw := uint16(b[0])<<8 | uint16(b[1])
 	d := &Data{
-		BatLevel:       batLevels[batteryRaw>>14],
+		BatteryLevel:   batLevels[batteryRaw>>14],
 		SensorType:     name,
 		BatteryVoltage: float64(batteryRaw&0x3FFF) / 1000,
 		Temperature:    round(float64(int16(uint16(b[2])<<8|uint16(b[3])))/100, 2),
@@ -74,7 +74,7 @@ func Decode(u decoders.Uplink) (any, error) {
 
 	switch sensorType {
 	case 1:
-		d.ExternalTemperature = ptr(round(float64(int16(raw))/100, 2))
+		d.TemperatureExternal = ptr(round(float64(int16(raw))/100, 2))
 	case 4:
 		lvl := "Low"
 		if b[7] != 0 {
@@ -87,7 +87,7 @@ func Decode(u decoders.Uplink) (any, error) {
 		d.InterruptPinLevel = ptr(lvl)
 		d.InterruptStatus = ptr(st)
 	case 5:
-		d.Illumination = ptr(int(raw))
+		d.IlluminationLux = ptr(int(raw))
 	case 6:
 		d.ADCVoltage = ptr(float64(raw) / 1000)
 	case 7:
@@ -95,7 +95,7 @@ func Decode(u decoders.Uplink) (any, error) {
 	}
 
 	if b[6]&0x80 != 0 {
-		d.SensorConnectionStatus = ptr("Sensor no connection")
+		d.SensorConnection = ptr("Sensor no connection")
 	}
 
 	return d, nil

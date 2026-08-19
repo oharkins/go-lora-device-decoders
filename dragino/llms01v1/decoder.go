@@ -13,12 +13,12 @@ func init() {
 }
 
 type Data struct {
-	BatV          float64 `json:"bat_v"`
-	TempCDS18B20  float64 `json:"temp_c_ds18b20"`
-	LeafMoisture  float64 `json:"leaf_moisture"`
-	LeafTemp      float64 `json:"leaf_temp"`
-	InterruptFlag int     `json:"interrupt_flag"`
-	MessageType   int     `json:"message_type"`
+	BatteryVoltage     float64 `json:"battery_voltage"`
+	TemperatureDS18B20 float64 `json:"temperature_ds18b20"`
+	MoistureLeaf       float64 `json:"moisture_leaf"`
+	TemperatureLeaf    float64 `json:"temperature_leaf"`
+	InterruptFlag      int     `json:"interrupt_flag"`
+	MessageType        int     `json:"message_type"`
 }
 
 func round(v float64, places int) float64 {
@@ -47,11 +47,11 @@ func Decode(u decoders.Uplink) (any, error) {
 		rawVal = int32(raw)
 	}
 	return &Data{
-		BatV:         float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		TempCDS18B20: round(float64(rawVal)/10, 2),
-		LeafMoisture: round(float64(uint16(b[4])<<8|uint16(b[5]))/10, 2),
-		LeafTemp:     signedSoilTemp(b[6], b[7], 10),
-		InterruptFlag: int(b[8]),
-		MessageType:  int(b[10]),
+		BatteryVoltage:     float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		TemperatureDS18B20: round(float64(rawVal)/10, 2),
+		MoistureLeaf:       round(float64(uint16(b[4])<<8|uint16(b[5]))/10, 2),
+		TemperatureLeaf:    signedSoilTemp(b[6], b[7], 10),
+		InterruptFlag:      int(b[8]),
+		MessageType:        int(b[10]),
 	}, nil
 }

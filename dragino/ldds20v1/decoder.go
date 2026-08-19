@@ -12,10 +12,10 @@ func init() {
 }
 
 type Data struct {
-	BatV            float64 `json:"bat_v"`
-	DistanceMM      *int    `json:"distance_mm,omitempty"`
-	DistanceStatus  string  `json:"distance_status,omitempty"`
-	InterruptStatus int     `json:"interrupt_status"`
+	BatteryVoltage float64 `json:"battery_voltage"`
+	DistanceMM     *int    `json:"distance_mm,omitempty"`
+	DistanceStatus string  `json:"distance_status,omitempty"`
+	InterruptFlag  int     `json:"interrupt_flag"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -26,8 +26,8 @@ func Decode(u decoders.Uplink) (any, error) {
 		return nil, fmt.Errorf("ldds20v1: payload too short: %d bytes", len(b))
 	}
 	d := &Data{
-		BatV:            float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		InterruptStatus: int(b[len(b)-1]),
+		BatteryVoltage: float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		InterruptFlag:  int(b[len(b)-1]),
 	}
 	if len(b) == 5 {
 		v := int(uint16(b[2])<<8 | uint16(b[3]))

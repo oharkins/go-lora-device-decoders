@@ -22,8 +22,8 @@ func TestDecodeBuiltIn(t *testing.T) {
 	payload := []byte{0x0B, 0xF2, 0x08, 0xDF, 0x02, 0x32, 0x01, 0x09, 0xC4}
 	d := decode(t, payload)
 
-	if d.BatLevel != "Ultra Low" {
-		t.Errorf("bat_level = %q, want \"Ultra Low\"", d.BatLevel)
+	if d.BatteryLevel != "Ultra Low" {
+		t.Errorf("battery_level = %q, want \"Ultra Low\"", d.BatteryLevel)
 	}
 	if d.BatteryVoltage != 3.058 {
 		t.Errorf("battery_voltage = %v, want 3.058", d.BatteryVoltage)
@@ -37,8 +37,8 @@ func TestDecodeBuiltIn(t *testing.T) {
 	if d.SensorType != "Temperature Sensor" {
 		t.Errorf("sensor_type = %q, want \"Temperature Sensor\"", d.SensorType)
 	}
-	if d.ExternalTemperature == nil || *d.ExternalTemperature != 25.00 {
-		t.Errorf("external_temperature = %v, want 25.00", d.ExternalTemperature)
+	if d.TemperatureExternal == nil || *d.TemperatureExternal != 25.00 {
+		t.Errorf("temperature_external = %v, want 25.00", d.TemperatureExternal)
 	}
 }
 
@@ -62,8 +62,8 @@ func TestBatLevel(t *testing.T) {
 		t.Run(tc.want, func(t *testing.T) {
 			payload := []byte{tc.b0, 0xF2, 0x08, 0xDF, 0x02, 0x32, 0x00, 0x00, 0x00}
 			d := decode(t, payload)
-			if d.BatLevel != tc.want {
-				t.Errorf("bat_level = %q, want %q", d.BatLevel, tc.want)
+			if d.BatteryLevel != tc.want {
+				t.Errorf("battery_level = %q, want %q", d.BatteryLevel, tc.want)
 			}
 			if d.BatteryVoltage != 3.058 {
 				t.Errorf("battery_voltage = %v, want 3.058 (bat level bits must not affect voltage)", d.BatteryVoltage)
@@ -112,8 +112,8 @@ func TestNoConnection(t *testing.T) {
 	// bit 7 of b[6] set → sensor no connection
 	payload := []byte{0x0B, 0xF2, 0x08, 0xDF, 0x02, 0x32, 0x81, 0x00, 0x00}
 	d := decode(t, payload)
-	if d.SensorConnectionStatus == nil || *d.SensorConnectionStatus != "Sensor no connection" {
-		t.Errorf("sensor_connection_status = %v, want \"Sensor no connection\"", d.SensorConnectionStatus)
+	if d.SensorConnection == nil || *d.SensorConnection != "Sensor no connection" {
+		t.Errorf("sensor_connection = %v, want \"Sensor no connection\"", d.SensorConnection)
 	}
 }
 

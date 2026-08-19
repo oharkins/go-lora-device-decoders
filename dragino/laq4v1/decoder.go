@@ -13,19 +13,19 @@ func init() {
 }
 
 type Data struct {
-	BatV       float64  `json:"bat_v"`
-	WorkMode   string   `json:"work_mode"`
-	Alarm      *bool    `json:"alarm_status,omitempty"`
-	TVOCPPB    *int     `json:"tvoc_ppb,omitempty"`
-	CO2PPM     *int     `json:"co2_ppm,omitempty"`
-	TempCSHT   *float64 `json:"temp_c_sht,omitempty"`
-	HumSHT     *float64 `json:"hum_sht,omitempty"`
-	SHTTempMin *int8    `json:"sht_temp_min,omitempty"`
-	SHTTempMax *int8    `json:"sht_temp_max,omitempty"`
-	SHTHumMin  *uint8   `json:"sht_hum_min,omitempty"`
-	SHTHumMax  *uint8   `json:"sht_hum_max,omitempty"`
-	CO2Min     *int     `json:"co2_min,omitempty"`
-	CO2Max     *int     `json:"co2_max,omitempty"`
+	BatteryVoltage float64  `json:"battery_voltage"`
+	WorkMode       string   `json:"work_mode"`
+	Alarm          *bool    `json:"alarm,omitempty"`
+	TVOCPPB        *int     `json:"tvoc_ppb,omitempty"`
+	CO2PPM         *int     `json:"co2_ppm,omitempty"`
+	Temperature    *float64 `json:"temperature,omitempty"`
+	Humidity       *float64 `json:"humidity,omitempty"`
+	SHTTempMin     *int8    `json:"sht_temp_min,omitempty"`
+	SHTTempMax     *int8    `json:"sht_temp_max,omitempty"`
+	SHTHumMin      *uint8   `json:"sht_hum_min,omitempty"`
+	SHTHumMax      *uint8   `json:"sht_hum_max,omitempty"`
+	CO2Min         *int     `json:"co2_min,omitempty"`
+	CO2Max         *int     `json:"co2_max,omitempty"`
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -42,7 +42,7 @@ func Decode(u decoders.Uplink) (any, error) {
 	}
 	mode := (b[2] & 0x7C) >> 2
 	d := &Data{
-		BatV: float64(uint16(b[0])<<8|uint16(b[1])) / 1000,
+		BatteryVoltage: float64(uint16(b[0])<<8|uint16(b[1])) / 1000,
 	}
 	switch mode {
 	case 1:
@@ -55,8 +55,8 @@ func Decode(u decoders.Uplink) (any, error) {
 		d.Alarm = ptr(alarm)
 		d.TVOCPPB = ptr(tvoc)
 		d.CO2PPM = ptr(co2)
-		d.TempCSHT = ptr(temp)
-		d.HumSHT = ptr(hum)
+		d.Temperature = ptr(temp)
+		d.Humidity = ptr(hum)
 	case 31:
 		d.WorkMode = "ALARM"
 		d.SHTTempMin = ptr(int8(b[3]))

@@ -13,13 +13,13 @@ func init() {
 }
 
 type Data struct {
-	BatV         float64 `json:"bat_v"`
-	TempCDS18B20 float64 `json:"temp_c_ds18b20"`
-	NSoil        int     `json:"n_soil"`
-	PSoil        int     `json:"p_soil"`
-	KSoil        int     `json:"k_soil"`
-	InterruptFlag int    `json:"interrupt_flag"`
-	MessageType  int     `json:"message_type"`
+	BatteryVoltage        float64 `json:"battery_voltage"`
+	TemperatureDS18B20    float64 `json:"temperature_ds18b20"`
+	NitrogenSoilMGKG      int     `json:"nitrogen_soil_mg_kg"`
+	PhosphorusSoilMGKG    int     `json:"phosphorus_soil_mg_kg"`
+	PotassiumSoilMGKG     int     `json:"potassium_soil_mg_kg"`
+	InterruptFlag         int     `json:"interrupt_flag"`
+	MessageType           int     `json:"message_type"`
 }
 
 func round(v float64, places int) float64 {
@@ -40,12 +40,12 @@ func Decode(u decoders.Uplink) (any, error) {
 		ds = int32(rawDS)
 	}
 	return &Data{
-		BatV:          float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
-		TempCDS18B20:  round(float64(ds)/10, 2),
-		NSoil:         int(uint16(b[4])<<8 | uint16(b[5])),
-		PSoil:         int(uint16(b[6])<<8 | uint16(b[7])),
-		KSoil:         int(uint16(b[8])<<8 | uint16(b[9])),
-		MessageType:   int(b[10] >> 4),
-		InterruptFlag: int(b[10] & 0x0F),
+		BatteryVoltage:     float64((uint16(b[0])<<8|uint16(b[1]))&0x3FFF) / 1000,
+		TemperatureDS18B20: round(float64(ds)/10, 2),
+		NitrogenSoilMGKG:   int(uint16(b[4])<<8 | uint16(b[5])),
+		PhosphorusSoilMGKG: int(uint16(b[6])<<8 | uint16(b[7])),
+		PotassiumSoilMGKG:  int(uint16(b[8])<<8 | uint16(b[9])),
+		MessageType:        int(b[10] >> 4),
+		InterruptFlag:      int(b[10] & 0x0F),
 	}, nil
 }

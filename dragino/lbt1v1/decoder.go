@@ -16,18 +16,18 @@ func init() {
 }
 
 type Data struct {
-	UUID               string `json:"uuid"`
-	ADDR               string `json:"addr"`
-	Major              int    `json:"major"`
-	Minor              int    `json:"minor"`
-	RSSI               any    `json:"rssi"`
-	Power              any    `json:"power"`
-	DeviceInformation1 string `json:"device_information1"`
-	DeviceInformation2 string `json:"device_information2"`
-	DeviceInformation3 string `json:"device_information3"`
-	StepCount          int    `json:"step_count"`
-	Alarm              int    `json:"alarm"`
-	BatV               float64 `json:"bat_v"`
+	UUID               string  `json:"uuid"`
+	ADDR               string  `json:"addr"`
+	Major              int     `json:"major"`
+	Minor              int     `json:"minor"`
+	RSSI               any     `json:"rssi"`
+	Power              any     `json:"power"`
+	DeviceInformation1 string  `json:"device_information1"`
+	DeviceInformation2 string  `json:"device_information2"`
+	DeviceInformation3 string  `json:"device_information3"`
+	StepCount          int     `json:"step_count"`
+	Alarm              int     `json:"alarm"`
+	BatteryVoltage     float64 `json:"battery_voltage"`
 }
 
 func Decode(u decoders.Uplink) (any, error) {
@@ -42,9 +42,9 @@ func Decode(u decoders.Uplink) (any, error) {
 	stepCount := int(uint32(b[2]&0x0F)<<16 | uint32(b[3])<<8 | uint32(b[4]))
 
 	d := &Data{
-		BatV:      batV,
-		Alarm:     alarm,
-		StepCount: stepCount,
+		BatteryVoltage: batV,
+		Alarm:          alarm,
+		StepCount:      stepCount,
 	}
 
 	switch mode {
