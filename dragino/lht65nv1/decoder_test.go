@@ -61,3 +61,35 @@ func TestRegistryGet(t *testing.T) {
 		t.Fatal("registry lookup failed")
 	}
 }
+
+func TestDecodeDS18B20Disconnected(t *testing.T) {
+	// Base64: y40B4APOAX//f/8=
+	// Ext=1 (DS18B20), probe returns 0x7FFF sentinel (not connected).
+	payload := []byte{0xCB, 0x8D, 0x01, 0xE0, 0x03, 0xCE, 0x01, 0x7F, 0xFF, 0x7F, 0xFF}
+	v, err := lht65nv1.Decode(decoders.Uplink{FPort: 2, Payload: payload})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, ok := v.(*lht65nv1.Data)
+	if !ok {
+		t.Fatalf("got %T, want *Data", v)
+	}
+	if d.BatStatus != "Good" {
+		t.Errorf("bat_status = %q, want \"Good\"", d.BatStatus)
+	}
+	if d.BatV == nil || *d.BatV != 2.957 {
+		t.Errorf("bat_v = %v, want 2.957", d.BatV)
+	}
+	if d.TempCSHT == nil || *d.TempCSHT != 4.8 {
+		t.Errorf("temp_c_sht = %v, want 4.8", d.TempCSHT)
+	}
+	if d.HumSHT == nil || *d.HumSHT != 97.4 {
+		t.Errorf("hum_sht = %v, want 97.4", d.HumSHT)
+	}
+	if d.ExtSensor != "Temperature Sensor" {
+		t.Errorf("ext_sensor = %q, want \"Temperature Sensor\"", d.ExtSensor)
+	}
+	if d.TempCDS == nil || *d.TempCDS != 327.67 {
+		t.Errorf("temp_c_ds = %v, want 327.67 (0x7FFF sentinel)", d.TempCDS)
+	}
+}
